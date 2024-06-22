@@ -116,18 +116,19 @@ if(CHIAKI_USE_SYSTEM_NANOPB)
 	endif()
 endif()
 
-if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
-    message (STATUS "Found android , including opensslProject")
-    include(OpenSSLExternalProject)
+if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Android" OR CHIAKI_LIB_OPENSSL_EXTERNAL_PROJECT)
+    message (STATUS "Enabling External OpenSSL build")
+    #include(OpenSSLExternalProject)
+	add_subdirectory(openssl-cmake)
 endif()
 
 add_subdirectory(third-party)
 
 add_definitions(-DCHIAKI_VERSION_MAJOR=${CHIAKI_VERSION_MAJOR} -DCHIAKI_VERSION_MINOR=${CHIAKI_VERSION_MINOR} -DCHIAKI_VERSION_PATCH=${CHIAKI_VERSION_PATCH} -DCHIAKI_VERSION=\"${CHIAKI_VERSION}\")
 
-if(CHIAKI_LIB_OPENSSL_EXTERNAL_PROJECT)
-	include(OpenSSLExternalProject)
-endif()
+#if(CHIAKI_LIB_OPENSSL_EXTERNAL_PROJECT)
+	#include(OpenSSLExternalProject)
+#endif()
 
 
 

@@ -22,3 +22,6 @@
 [submodule "third-party/cpp-steam-tools"]
 	path = third-party/cpp-steam-tools
 	url = https://github.com/streetpea/cpp-steam-tools.git
+[submodule "third-party/openssl-cmake"]
+	path = third-party/openssl-cmake
+	url = git@github.com:viaduck/openssl-cmake.git
