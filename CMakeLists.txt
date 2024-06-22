@@ -101,8 +101,11 @@ if(CHIAKI_ENABLE_SPEEX)
 	endif()
 endif()
 
-find_package(PythonInterp 3 REQUIRED) # Make sure nanopb doesn't find Python 2.7 because Python 2 should just die.
 
+#find_package(PythonInterp 3 REQUIRED) # Make sure nanopb doesn't find Python 2.7 because Python 2 should just die.
+#find_package(Python3 REQUIRED)
+message(STATUS "This is the path to python ${Python3_EXECUTABLE}")
+message (STATUS "CMAKE system name ${CMAKE_SYSTEM_NAME}")
 if(CHIAKI_USE_SYSTEM_NANOPB)
 	if(CHIAKI_USE_SYSTEM_NANOPB STREQUAL AUTO)
 		find_package(Nanopb QUIET)
@@ -113,6 +116,11 @@ if(CHIAKI_USE_SYSTEM_NANOPB)
 	endif()
 endif()
 
+if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
+    message (STATUS "Found android , including opensslProject")
+    include(OpenSSLExternalProject)
+endif()
+
 add_subdirectory(third-party)
 
 add_definitions(-DCHIAKI_VERSION_MAJOR=${CHIAKI_VERSION_MAJOR} -DCHIAKI_VERSION_MINOR=${CHIAKI_VERSION_MINOR} -DCHIAKI_VERSION_PATCH=${CHIAKI_VERSION_PATCH} -DCHIAKI_VERSION=\"${CHIAKI_VERSION}\")
@@ -120,6 +128,9 @@ add_definitions(-DCHIAKI_VERSION_MAJOR=${CHIAKI_VERSION_MAJOR} -DCHIAKI_VERSION_
 if(CHIAKI_LIB_OPENSSL_EXTERNAL_PROJECT)
 	include(OpenSSLExternalProject)
 endif()
+
+
+
 
 if(CHIAKI_LIB_ENABLE_MBEDTLS)
 	add_definitions(-DCHIAKI_LIB_ENABLE_MBEDTLS)
