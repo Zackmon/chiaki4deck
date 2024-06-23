@@ -8,6 +8,9 @@ set(SDL2_VERSION_MAJOR)
 set(SDL2_VERSION_MINOR)
 set(SDL2_VERSION_PATCH)
 set(SDL2_VERSION)
+
+
+
 if(SDL2_INCLUDE_DIR)
     file(READ "${SDL2_INCLUDE_DIR}/SDL_version.h" _sdl_version_h)
     string(REGEX MATCH "#define[ \t]+SDL_MAJOR_VERSION[ \t]+([0-9]+)" _sdl2_major_re "${_sdl_version_h}")
