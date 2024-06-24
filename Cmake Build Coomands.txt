@@ -4,14 +4,15 @@ Linux
 
 
 Android
--DCMAKE_PREFIX_PATH=/home/zackmon/developemnt/qt_installer/Qt/6.7.0/android_x86_64/lib/cmake
+-DCMAKE_PREFIX_PATH=/home/zackmon/developemnt/qt_installer/Qt/6.7.0/android_x86_64/lib/cmake;/home/zackmon/development/libplacebo/build_android_prefix
 -DCHIAKI_LIB_OPENSSL_EXTERNAL_PROJECT:BOOL=ON
 -DANDROID_ABI=x86_64
 -DANDROID_NDK:PATH=/home/zackmon/Android/Sdk/ndk/26.1.10909125
 -DANDROID_PLATFORM=android-23
 -DANDROID_SDK_ROOT:PATH=/home/zackmon/Android/Sdk
--DANDROID_STL=c++_shared
 -DANDROID_USE_LEGACY_TOOLCHAIN_FILE:BOOL=OFF
+-DANDROID_STL=c++_shared
+-DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 -DCMAKE_TOOLCHAIN_FILE:FILEPATH=/home/zackmon/Android/Sdk/ndk/26.1.10909125/build/cmake/android.toolchain.cmake
 -DOPENSSL_BUILD_VERSION=1.1.1d
 -DCROSS_ANDROID=ON
@@ -22,3 +23,44 @@ Android
 -DCHIAKI_ENABLE_TESTS=OFF
 -DCHIAKI_ENABLE_PI_DECODER=OFF
 -DCMAKE_FIND_ROOT_PATH=/home/zackmon/developemnt/qt_installer/Qt/6.7.0/android_x86_64
+
+
+CROSSFILE
+
+[binaries]
+c = 'x86_64-linux-android21-clang'
+cpp = 'x86_64-linux-android21-clang++'
+ar = 'llvm-ar'
+nm = 'llvm-nm'
+strip = 'llvm-strip'
+pkg-config = 'pkg-config'
+[host_machine]
+system = 'android'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'
+
+
+Build Android libplacebo
+
+
+# ANDROID HOME /home/zackmon/Android/Sdk
+# toolchain /home/zackmon/Android/Sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin
+# crossFILE crossfile_androidx86_64.txt
+
+toolchain="/home/zackmon/Android/Sdk/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin"
+export ANDROID_HOME="/home/zackmon/Android/Sdk"
+export PATH=$toolchain:$PATH
+echo $PATH
+
+DIR=./build_android_meson
+prefix=/home/zackmon/development/libplacebo/build_android_prefix
+crossfile=crossfile_androidx86_64.txt
+unset CC CXX
+meson setup --prefix $prefix --cross-file $crossfile -Dlcms=disabled -Dxxhash=disabled -Ddemos=false $DIR
+ninja -C$DIR
+ninja -C$DIR install
+
+
+
+~

@@ -72,8 +72,9 @@ Hints
 #]=======================================================================]
 
 cmake_policy(PUSH)
+if (CMAKE_VERSION GREATER_EQUAL 3.29)
 cmake_policy(SET CMP0159 NEW) # file(STRINGS) with REGEX updates CMAKE_MATCH_<n>
-
+endif ()
 include(FindPackageHandleStandardArgs)
 
 if(NOT CURL_NO_CURL_CMAKE)
