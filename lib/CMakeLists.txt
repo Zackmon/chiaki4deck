@@ -135,13 +135,19 @@ find_package(Threads REQUIRED)
 target_link_libraries(chiaki-lib Threads::Threads)
 
 find_package(PkgConfig REQUIRED)
-pkg_search_module(json-c REQUIRED json-c IMPORTED_TARGET)
-target_include_directories(chiaki-lib PRIVATE ${json-c_INCLUDE_DIRS})
-target_link_libraries(chiaki-lib PkgConfig::json-c)
+#pkg_search_module(json-c REQUIRED json-c IMPORTED_TARGET)
+#target_include_directories(chiaki-lib PRIVATE ${json-c_INCLUDE_DIRS})
+#target_link_libraries(chiaki-lib PkgConfig::json-c)
+find_package(json-c REQUIRED CONFIG)
+target_link_libraries(chiaki-lib json-c::libjson-c.a)
+
 
 find_package(PkgConfig REQUIRED)
-pkg_search_module(MINIUPNPC REQUIRED miniupnpc IMPORTED_TARGET)
-target_link_libraries(chiaki-lib PkgConfig::MINIUPNPC)
+#pkg_search_module(MINIUPNPC REQUIRED miniupnpc IMPORTED_TARGET)
+#target_link_libraries(chiaki-lib PkgConfig::MINIUPNPC)
+find_package(libminiupnpc REQUIRED CONFIG)
+target_link_libraries(chiaki-lib libminiupnpc::libminiupnpc.a)
+
 
 if(CHIAKI_LIB_ENABLE_MBEDTLS)
 	if(CHIAKI_LIB_MBEDTLS_EXTERNAL_PROJECT)
@@ -157,12 +163,14 @@ elseif(CHIAKI_LIB_OPENSSL_EXTERNAL_PROJECT)
 	target_link_libraries(chiaki-lib OpenSSL_Crypto)
 else()
 	# default
-	find_package(OpenSSL REQUIRED)
-	target_link_libraries(chiaki-lib OpenSSL::Crypto)
+	find_package(openssl REQUIRED CONFIG)
+	#target_link_libraries(chiaki-lib OpenSSL::Crypto)
+	target_link_libraries(chiaki-lib openssl::libcrypto.so)
+
 endif()
 
 if (CHIAKI_USE_SYSTEM_CURL)
-	target_link_libraries(chiaki-lib CURL::libcurl_shared)
+	target_link_libraries(chiaki-lib libcurl::libcurl.so)
 else()
 	target_link_libraries(chiaki-lib CURL::libcurl_static)
 endif()

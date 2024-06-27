@@ -46,6 +46,9 @@ extern "C" {
 #define CHIAKI_SSIZET_TYPE ssize_t
 #endif
 
+#ifdef __ANDROID__
+#define INET6_ADDRSTRLEN 46
+#endif
 #define CHIAKI_DUID_STR_SIZE 49
 
 /** Handle to holepunching session state */
