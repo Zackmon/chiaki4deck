@@ -7,7 +7,11 @@
 #include <QTimer>
 
 #ifdef CHIAKI_GUI_ENABLE_SDL_GAMECONTROLLER
+#if __ANDROID__
+#include <SDL2/SDL.h>
+#else
 #include <SDL.h>
+#endif
 #endif
 
 static QSet<QString> chiaki_motion_controller_guids({

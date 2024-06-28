@@ -73,7 +73,7 @@ if(APPLE)
 endif()
 
 if (ANDROID)
-	add_library(chiaki
+	add_library(chiaki SHARED
 			${RESOURCE_FILES}
 			${SOURCE_FILES}
 	)
@@ -90,7 +90,7 @@ find_package(libplacebo REQUIRED CONFIG)
 if (ANDROID)
 	target_link_libraries(placebo-libav-impl libplacebo::libplacebo.so ffmpeg::libavcodec.a ffmpeg::libavutil.a ffmpeg::libavformat.a)
 else ()
-target_link_libraries(placebo-libav-impl libplacebo::libplacebo.so FFMPEG::avcodec FFMPEG::avutil FFMPEG::avformat)
+target_link_libraries(placebo-libav-impl PkgConfig::LIBPLACEBO FFMPEG::avcodec FFMPEG::avutil FFMPEG::avformat)
 endif ()
 target_link_libraries(chiaki libplacebo::libplacebo.so placebo-libav-impl)
 
@@ -106,14 +106,20 @@ if (${Qt6DBus_FOUND} AND NOT WIN32)
 	target_compile_definitions(chiaki PRIVATE CHIAKI_HAVE_DBUS)
 endif()
 if (ANDROID)
+	find_package(sdl2 REQUIRED CONFIG)
 	target_link_libraries(chiaki sdl2::libSDL2.so)
 
 else ()
 target_link_libraries(chiaki SDL2::SDL2)
 endif ()
 if(CHIAKI_ENABLE_SPEEX)
+	if (ANDROID)
+		find_package(libspeexdsp REQUIRED CONFIG)
+		target_link_libraries(chiaki libspeexdsp::libspeexdsp.so)
+	else ()
   target_link_libraries(chiaki PkgConfig::SpeexDSP)
-  target_compile_definitions(chiaki PRIVATE CHIAKI_GUI_ENABLE_SPEEX)
+	endif ()
+	target_compile_definitions(chiaki PRIVATE CHIAKI_GUI_ENABLE_SPEEX)
 endif()
 if(CHIAKI_GUI_ENABLE_SDL_GAMECONTROLLER)
 	target_compile_definitions(chiaki PRIVATE CHIAKI_GUI_ENABLE_SDL_GAMECONTROLLER)
@@ -136,6 +142,13 @@ endif()
 if(APPLE)
 	target_link_libraries(chiaki "-framework AVFoundation")
 endif()
+
+if (ANDROID)
+	target_link_libraries(${CMAKE_PROJECT_NAME}
+			# List libraries link to the target library
+			android
+			log)
+endif ()
 
 set_target_properties(chiaki PROPERTIES
 		MACOSX_BUNDLE TRUE

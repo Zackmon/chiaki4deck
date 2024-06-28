@@ -106,8 +106,17 @@ set_source_files_properties(${CHIAKI_LIB_PROTO_SOURCE_FILES} ${CHIAKI_LIB_PROTO_
 include_directories("${CHIAKI_LIB_PROTO_INCLUDE_DIR}")
 
 if(CHIAKI_LIB_ENABLE_OPUS)
-	find_package(Opus REQUIRED)
-	include_directories(${Opus_INCLUDE_DIRS})
+	if (ANDROID)
+		find_package(PkgConfig REQUIRED)
+		pkg_search_module(opus REQUIRED opus IMPORTED_TARGET)
+		#target_link_libraries(chiaki-lib libopus::libopus.so)
+		include_directories(libopus::headers)
+
+	else ()
+		find_package(Opus REQUIRED)
+		include_directories(${Opus_INCLUDE_DIRS})
+	endif ()
+
 endif()
 
 add_library(chiaki-lib ${HEADER_FILES} ${SOURCE_FILES} ${CHIAKI_LIB_PROTO_SOURCE_FILES} ${CHIAKI_LIB_PROTO_HEADER_FILES})
@@ -135,18 +144,17 @@ find_package(Threads REQUIRED)
 target_link_libraries(chiaki-lib Threads::Threads)
 
 find_package(PkgConfig REQUIRED)
-#pkg_search_module(json-c REQUIRED json-c IMPORTED_TARGET)
-#target_include_directories(chiaki-lib PRIVATE ${json-c_INCLUDE_DIRS})
-#target_link_libraries(chiaki-lib PkgConfig::json-c)
-find_package(json-c REQUIRED CONFIG)
-target_link_libraries(chiaki-lib json-c::libjson-c.a)
+pkg_search_module(json-c REQUIRED json-c IMPORTED_TARGET)
+target_include_directories(chiaki-lib PRIVATE ${json-c_INCLUDE_DIRS})
+target_link_libraries(chiaki-lib PkgConfig::json-c)
+#find_package(json-c REQUIRED CONFIG)
+#target_link_libraries(chiaki-lib json-c::libjson-c.a)
 
 
 find_package(PkgConfig REQUIRED)
-#pkg_search_module(MINIUPNPC REQUIRED miniupnpc IMPORTED_TARGET)
-#target_link_libraries(chiaki-lib PkgConfig::MINIUPNPC)
-find_package(libminiupnpc REQUIRED CONFIG)
-target_link_libraries(chiaki-lib libminiupnpc::libminiupnpc.a)
+pkg_search_module(MINIUPNPC REQUIRED miniupnpc IMPORTED_TARGET)
+target_link_libraries(chiaki-lib PkgConfig::MINIUPNPC)
+
 
 
 if(CHIAKI_LIB_ENABLE_MBEDTLS)
@@ -163,9 +171,14 @@ elseif(CHIAKI_LIB_OPENSSL_EXTERNAL_PROJECT)
 	target_link_libraries(chiaki-lib OpenSSL_Crypto)
 else()
 	# default
-	find_package(openssl REQUIRED CONFIG)
-	#target_link_libraries(chiaki-lib OpenSSL::Crypto)
-	target_link_libraries(chiaki-lib openssl::libcrypto.so)
+	if(ANDROID)
+		find_package(PkgConfig REQUIRED)
+		pkg_search_module(libcrypto REQUIRED libcrypto IMPORTED_TARGET)
+		target_link_libraries(chiaki-lib PkgConfig::libcrypto)
+	else ()
+		find_package(openssl REQUIRED CONFIG)
+		target_link_libraries(chiaki-lib OpenSSL::Crypto)
+	endif ()
 
 endif()
 
@@ -191,7 +204,12 @@ if(CHIAKI_ENABLE_PI_DECODER)
 endif()
 
 if(CHIAKI_LIB_ENABLE_OPUS)
+	if (ANDROID)
+		target_link_libraries(chiaki-lib PkgConfig::opus)
+	else ()
 	target_link_libraries(chiaki-lib ${Opus_LIBRARIES})
+	endif ()
+
 endif()
 
 add_executable(holepunch-test include/chiaki/remote/holepunch.h src/remote/holepunch-test.c)

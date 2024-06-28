@@ -18,7 +18,8 @@ extern "C" {
 }
 
 #include <vulkan/vulkan.h>
-#if defined(Q_OS_LINUX)
+
+#if defined(Q_OS_LINUX) && ! __ANDROID__
 #include <xcb/xcb.h>
 #include <vulkan/vulkan_xcb.h>
 #include <vulkan/vulkan_wayland.h>
@@ -26,6 +27,8 @@ extern "C" {
 #include <vulkan/vulkan_metal.h>
 #elif defined(Q_OS_WIN)
 #include <vulkan/vulkan_win32.h>
+#elif __ANDROID__
+#include <vulkan/vulkan_android.h>
 #endif
 
 Q_DECLARE_LOGGING_CATEGORY(chiakiGui);
@@ -157,13 +160,15 @@ private:
 
     struct {
         PFN_vkGetDeviceProcAddr vkGetDeviceProcAddr;
-#if defined(Q_OS_LINUX)
+#if defined(Q_OS_LINUX) && ! __ANDROID__
         PFN_vkCreateXcbSurfaceKHR vkCreateXcbSurfaceKHR;
         PFN_vkCreateWaylandSurfaceKHR vkCreateWaylandSurfaceKHR;
 #elif defined(Q_OS_MACOS)
         PFN_vkCreateMetalSurfaceEXT vkCreateMetalSurfaceEXT;
 #elif defined(Q_OS_WIN32)
         PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
+#elif __ANDROID__
+        PFN_vkCreateAndroidSurfaceKHR  vkCreateAndroidSurfaceKhr;
 #endif
         PFN_vkDestroySurfaceKHR vkDestroySurfaceKHR;
         PFN_vkWaitSemaphores vkWaitSemaphores;

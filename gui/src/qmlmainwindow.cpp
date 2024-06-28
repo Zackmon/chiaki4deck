@@ -331,7 +331,7 @@ void QmlMainWindow::init(Settings *settings)
         VK_KHR_SURFACE_EXTENSION_NAME,
     };
 
-#if defined(Q_OS_LINUX)
+#if defined(Q_OS_LINUX) && !__ANDROID__
     if (QGuiApplication::platformName().startsWith("wayland"))
         vk_exts[0] = VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME;
     else if (QGuiApplication::platformName().startsWith("xcb"))
@@ -342,6 +342,8 @@ void QmlMainWindow::init(Settings *settings)
     vk_exts[0] = VK_EXT_METAL_SURFACE_EXTENSION_NAME;
 #elif defined(Q_OS_WIN32)
     vk_exts[0] = VK_KHR_WIN32_SURFACE_EXTENSION_NAME;
+#elif __ANDROID__
+    vk_exts[0] = VK_KHR_ANDROID_SURFACE_EXTENSION_NAME;
 #endif
 
     const char *opt_extensions[] = {
@@ -370,7 +372,7 @@ void QmlMainWindow::init(Settings *settings)
         return; \
     } }
     GET_PROC(vkGetDeviceProcAddr)
-#if defined(Q_OS_LINUX)
+#if defined(Q_OS_LINUX) && !__ANDROID__
     if (QGuiApplication::platformName().startsWith("wayland"))
         GET_PROC(vkCreateWaylandSurfaceKHR)
     else if (QGuiApplication::platformName().startsWith("xcb"))
@@ -379,11 +381,23 @@ void QmlMainWindow::init(Settings *settings)
     GET_PROC(vkCreateMetalSurfaceEXT)
 #elif defined(Q_OS_WIN32)
     GET_PROC(vkCreateWin32SurfaceKHR)
+#elif __ANDROID__
+    GET_PROC(vkCreateAndroidSurfaceKhr)
 #endif
     GET_PROC(vkDestroySurfaceKHR)
     GET_PROC(vkGetPhysicalDeviceQueueFamilyProperties)
 #undef GET_PROC
 
+#if __ANDROID__
+
+    struct pl_vulkan_params vulkan_params = {
+            .instance = placebo_vk_inst->instance,
+            .get_proc_addr = placebo_vk_inst->get_proc_addr,
+            .allow_software = true,
+            PL_VULKAN_DEFAULTS
+            .num_opt_extensions = 4,
+    };
+#elif
     const char *opt_dev_extensions[] = {
         VK_KHR_VIDEO_QUEUE_EXTENSION_NAME,
         VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME,
@@ -400,6 +414,8 @@ void QmlMainWindow::init(Settings *settings)
         .opt_extensions = opt_dev_extensions,
         .num_opt_extensions = 4,
     };
+#endif
+
     placebo_vulkan = pl_vulkan_create(placebo_log, &vulkan_params);
 
 #define GET_PROC(name_) { \
@@ -417,7 +433,12 @@ void QmlMainWindow::init(Settings *settings)
     std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
     vk_funcs.vkGetPhysicalDeviceQueueFamilyProperties(placebo_vulkan->phys_device, &queueFamilyCount, queueFamilyProperties.data());
     auto queue_it = std::find_if(queueFamilyProperties.begin(), queueFamilyProperties.end(), [](VkQueueFamilyProperties prop) {
+#if __ANDROID__
+        return prop.queueFlags;
+#elif
         return prop.queueFlags & VK_QUEUE_VIDEO_DECODE_BIT_KHR;
+#endif
+
     });
     if (queue_it != queueFamilyProperties.end())
         vk_decode_queue_index = std::distance(queueFamilyProperties.begin(), queue_it);
@@ -559,7 +580,7 @@ void QmlMainWindow::createSwapchain()
         return;
 
     VkResult err = VK_ERROR_UNKNOWN;
-#if defined(Q_OS_LINUX)
+#if defined(Q_OS_LINUX) && !__ANDROID__
     if (QGuiApplication::platformName().startsWith("wayland")) {
         VkWaylandSurfaceCreateInfoKHR surfaceInfo = {};
         surfaceInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
@@ -586,6 +607,11 @@ void QmlMainWindow::createSwapchain()
     surfaceInfo.hinstance = GetModuleHandle(nullptr);
     surfaceInfo.hwnd = reinterpret_cast<HWND>(winId());
     err = vk_funcs.vkCreateWin32SurfaceKHR(placebo_vk_inst->instance, &surfaceInfo, nullptr, &surface);
+#elif __ANDROID__
+    VkAndroidSurfaceCreateInfoKHR surfaceInfo = {};
+    surfaceInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
+    surfaceInfo.window = reinterpret_cast<ANativeWindow *>(winId());
+    err = vk_funcs.vkCreateAndroidSurfaceKhr(placebo_vk_inst->instance,&surfaceInfo, nullptr,&surface);
 #endif
 
     if (err != VK_SUCCESS)

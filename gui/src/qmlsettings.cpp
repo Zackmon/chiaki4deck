@@ -9,7 +9,11 @@
 
 extern "C" {
 #include <libavcodec/avcodec.h>
+#if __ANDROID__
+#include <SDL2/SDL.h>
+#else
 #include <SDL.h>
+#endif
 }
 
 QmlSettings::QmlSettings(Settings *settings, QObject *parent)
