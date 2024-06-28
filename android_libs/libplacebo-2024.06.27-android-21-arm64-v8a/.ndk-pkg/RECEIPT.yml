@@ -1,0 +1,34 @@
+pkgname: libplacebo
+pkgtype: lib
+version: 2024.06.27
+summary: Reusable library for GPU-accelerated image/video processing primitives and shaders, as well a batteries-included, extensible, high-quality rendering pipeline (similar to mpv's vo_gpu). Supports Vulkan, OpenGL, Metal (via MoltenVK) and Direct3D 11.
+web-url: http://libplacebo.org/
+git-url: https://github.com/haasn/libplacebo
+git-sha: c320f61e601caef2be081ce61138e5d51c1be21d
+
+license: LGPL-2.1
+dep-pkg: lcms2 vulkan-headers 
+
+dep-upp: git python3 ninja
+bsystem: meson
+binbstd: 0
+install: |
+    mesonw \
+        -Dxxhash=disabled  \
+        -Ddemos=false
+parallel: 1
+ndkvers: 26.3.11579264
+builtby: ndk-pkg-0.12.3
+builtat: 1719493691
+buildon:
+    os-arch: x86_64
+    os-kind: linux
+    os-type: linux
+    os-code: ubuntu
+    os-name: Ubuntu
+    os-vers: 24.04
+    os-ncpu: 64
+    os-euid: 1000
+    os-egid: 1000
+builtfor: android-21-arm64-v8a
+profile: release

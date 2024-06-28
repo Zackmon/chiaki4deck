@@ -1,0 +1,29 @@
+pkgname: libspeexdsp
+pkgtype: lib
+version: 1.2.1
+summary: Speex audio processing library
+web-url: https://github.com/xiph/speexdsp
+git-url: https://github.com/xiph/speexdsp
+src-url: https://github.com/xiph/speexdsp/archive/SpeexDSP-1.2.1.tar.gz
+src-sha: d17ca363654556a4ff1d02cc13d9eb1fc5a8642c90b40bd54ce266c3807b91a7
+license: BSD-3-Clause
+dep-upp: libtool curl bsdtar gmake gm4 perl autoconf automake gmake
+bsystem: autogen
+binbstd: 0
+prepare: export LIBS=-lm
+parallel: 1
+ndkvers: 26.3.11579264
+builtby: ndk-pkg-0.12.3
+builtat: 1719531861
+buildon:
+    os-arch: x86_64
+    os-kind: linux
+    os-type: linux
+    os-code: ubuntu
+    os-name: Ubuntu
+    os-vers: 24.04
+    os-ncpu: 64
+    os-euid: 1000
+    os-egid: 1000
+builtfor: android-21-x86_64
+profile: release

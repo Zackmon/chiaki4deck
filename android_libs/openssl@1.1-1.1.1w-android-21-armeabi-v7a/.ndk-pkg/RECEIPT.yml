@@ -1,0 +1,64 @@
+pkgname: openssl@1.1
+pkgtype: exe+lib
+version: 1.1.1w
+summary: Cryptography and SSL/TLS Toolkit
+git-url: https://github.com/openssl/openssl
+web-url: https://www.openssl.org/
+src-url: https://www.openssl.org/source/openssl-1.1.1w.tar.gz
+src-sha: cf3098950cb4d853ad95c0841f1f9c6d3dc102dccfcacd521d93925208b76ac8
+license: OpenSSL
+dep-upp: perl curl bsdtar gmake
+bsystem: gmake
+binbstd: 1
+
+dopatch: |
+    sedInPlace '/-mandroid/d'           Configurations/15-android.conf
+    sedInPlace '/ndk is invalid/d'      Configurations/15-android.conf
+    sedInPlace '/no NDK $triarch-gcc/d' Configurations/15-android.conf
+    sedInPlace '/-target/d'             Configurations/15-android.conf
+    sedInPlace '/-gcc-toolchain/d'      Configurations/15-android.conf
+    sedInPlace '/tritools-4.9/d'        Configurations/15-android.conf
+
+# 注意：1.0.2以上的openssl不支持openssl-fips，从openssl3.0开始支持新设计的openssl-fips
+# https://github.com/openssl/openssl/issues/7582
+install: |
+    # ./configure LIST | grep android
+    case $TARGET_PLATFORM_ARCH in
+        armv7a)  TARGET='android-arm'    ;;
+        aarch64) TARGET='android-arm64'  ;;
+        i686)    TARGET='android-x86'    ;;
+        x86_64)  TARGET='android-x86_64' ;;
+    esac
+
+    export CROSS_SYSROOT="$SYSROOT"
+
+    run ./Configure \
+        no-tests \
+        no-ssl2 \
+        no-ssl3 \
+        no-comp \
+        no-asm \
+        -D__ANDROID_API__="$TARGET_PLATFORM_VERS" \
+        --prefix="$PACKAGE_INSTALL_DIR" \
+        --libdir=lib \
+        --openssldir=etc/ssl \
+        "$TARGET"
+    gmakew clean
+    gmakew build_libs  CROSS_COMPILE=
+    gmakew install_dev CROSS_COMPILE= 
+parallel: 1
+ndkvers: 26.3.11579264
+builtby: ndk-pkg-0.12.3
+builtat: 1719458747
+buildon:
+    os-arch: x86_64
+    os-kind: linux
+    os-type: linux
+    os-code: ubuntu
+    os-name: Ubuntu
+    os-vers: 24.04
+    os-ncpu: 64
+    os-euid: 1000
+    os-egid: 1000
+builtfor: android-21-armeabi-v7a
+profile: release

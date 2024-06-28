@@ -1,0 +1,5 @@
+digraph G {
+    "libplacebo" -> { "lcms2" "vulkan-headers" }
+    "lcms2" -> { "libtiff" "libjpeg-turbo" }
+    "libtiff" -> { "libzstd" "liblzma" "libz" }
+}

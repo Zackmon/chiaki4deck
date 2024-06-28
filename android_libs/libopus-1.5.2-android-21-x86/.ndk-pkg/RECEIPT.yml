@@ -1,0 +1,29 @@
+pkgname: libopus
+pkgtype: lib
+version: 1.5.2
+summary: Audio codec
+web-url: https://www.opus-codec.org
+git-url: https://github.com/xiph/opus
+src-url: https://downloads.xiph.org/releases/opus/opus-1.5.2.tar.gz
+src-sha: 65c1d2f78b9f2fb20082c38cbe47c951ad5839345876e46941612ee87f9a7ce1
+license: BSD-3-Clause
+dep-upp: curl bsdtar gmake gmake
+bsystem: configure
+binbstd: 0
+install: configure LIBS=-lm
+parallel: 1
+ndkvers: 26.3.11579264
+builtby: ndk-pkg-0.12.3
+builtat: 1719531861
+buildon:
+    os-arch: x86_64
+    os-kind: linux
+    os-type: linux
+    os-code: ubuntu
+    os-name: Ubuntu
+    os-vers: 24.04
+    os-ncpu: 64
+    os-euid: 1000
+    os-egid: 1000
+builtfor: android-21-x86
+profile: release

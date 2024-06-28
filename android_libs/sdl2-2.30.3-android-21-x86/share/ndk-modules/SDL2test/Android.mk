@@ -1,0 +1,13 @@
+LOCAL_PATH := $(call my-dir)
+_IMPORT_PREFIX := $(LOCAL_PATH)/../../..
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := SDL2test
+LOCAL_SRC_FILES := $(_IMPORT_PREFIX)//home/zackmon/.ndk-pkg/installed/android-21-x86/5665a5b89b3c34e58de682ad0a0c945448ffe20a17b65f0b8e103ce6f8aecc64/lib/libSDL2_test.a
+LOCAL_CPP_FEATURES := rtti exceptions
+# COMPATIBLE_INTERFACE_STRING SDL_VERSION
+LOCAL_EXPORT_C_INCLUDES := ${_IMPORT_PREFIX}/include\
+${_IMPORT_PREFIX}/include/SDL2
+# INTERFACE_SDL_VERSION SDL2
+include $(PREBUILT_STATIC_LIBRARY)
+

@@ -1,0 +1,91 @@
+pkgname: ffmpeg
+pkgtype: exe+lib
+version: 7.0
+summary: A complete, cross-platform solution to record, convert and stream audio and video
+git-url: https://github.com/FFmpeg/FFmpeg
+web-url: https://ffmpeg.org/
+src-url: https://ffmpeg.org/releases/ffmpeg-7.0.tar.xz
+src-sha: 4426a94dd2c814945456600c8adfc402bee65ec14a70e8c531ec9a2cd651da7b
+license: GPL-2.0-or-later
+dep-pkg: libmp3lame libtheora libvorbis libspeex librav1e libdav1d libx264 libx265 libopus libxvid libvpx libwebp libtiff libpng libjpeg-turbo libgif libxml2 sdl2
+dep-upp: nasm curl bsdtar gmake
+bsystem: gmake
+binbstd: 1
+
+install: |
+    unset CONFIGURE_EXTRA_ARGS
+
+    case $TARGET_PLATFORM_ARCH in
+        aarch64) CONFIGURE_EXTRA_ARGS='--enable-neon' ;;
+        armv7a)  CONFIGURE_EXTRA_ARGS='--enable-neon' ;;
+        i686)    CONFIGURE_EXTRA_ARGS='--disable-asm' ;;
+    esac
+
+    sedInPlace 's|-lxvidcore|-lxvidcore -lm|' configure
+    sedInPlace "s|SDL2_CONFIG=|SDL2_CONFIG='$sdl2_INSTALL_DIR/bin/sdl2-config'|" configure
+
+    if run ./configure \
+        --prefix="$PACKAGE_INSTALL_DIR" \
+        --sysroot="$SYSROOT" \
+        --ar="$AR" \
+        --as="$CC" \
+        --ld="$CC" \
+        --cc="$CC" \
+        --cxx="$CXX" \
+        --nm="$NM" \
+        --ranlib="$RANLIB" \
+        --strip="$STRIP" \
+        --pkg-config="$PKG_CONFIG" \
+        --arch="$TARGET_PLATFORM_ARCH" \
+        --target-os=android \
+        --enable-cross-compile \
+        --enable-pic \
+        --enable-static \
+        --enable-shared \
+        --enable-mediacodec \
+        --enable-libmp3lame \
+        --enable-libtheora \
+        --enable-libvorbis \
+        --enable-libspeex \
+        --enable-librav1e \
+        --enable-libdav1d \
+        --enable-libopus \
+        --enable-libwebp \
+        --enable-libx264 \
+        --enable-libx265 \
+        --enable-libxvid \
+        --enable-libvpx \
+        --enable-libxml2 \
+        --enable-lzma \
+        --enable-gpl \
+        --enable-jni \
+        --disable-doc \
+        --disable-debug \
+        --disable-vulkan \
+        --disable-ffplay \
+        --disable-ffprobe \
+        --disable-libfdk-aac \
+        --extra-cflags='-DANDROID' $CONFIGURE_EXTRA_ARGS ; then
+        gmakew clean
+        gmakew install V=1
+        run cp ffbuild/config.log .
+    else
+        cat ffbuild/config.log
+        return 1
+    fi
+parallel: 1
+ndkvers: 26.3.11579264
+builtby: ndk-pkg-0.12.3
+builtat: 1719531861
+buildon:
+    os-arch: x86_64
+    os-kind: linux
+    os-type: linux
+    os-code: ubuntu
+    os-name: Ubuntu
+    os-vers: 24.04
+    os-ncpu: 64
+    os-euid: 1000
+    os-egid: 1000
+builtfor: android-21-x86_64
+profile: release

@@ -1,0 +1,60 @@
+pkgname: curl
+pkgtype: exe
+version: 8.8.0
+summary: Get a file from an HTTP, HTTPS or FTP server
+git-url: https://github.com/curl/curl
+web-url: https://curl.haxx.se/
+src-url: https://curl.haxx.se/download/curl-8.8.0.tar.bz2
+src-sha: 40d3792d38cfa244d8f692974a567e9a5f3387c547579f1124e95ea2a1020d0d
+license: curl
+dep-pkg: libnghttp2 libcares libzstd libz brotli openssl-dev
+dep-upp: perl curl bsdtar gmake gmake
+
+dopatch: sedInPlace 's|-lbrotlidec|-lbrotlidec -lbrotlicommon|' configure
+
+bsystem: configure
+binbstd: 0
+install: |
+    configure \
+        --disable-shared \
+        --enable-static \
+        --enable-optimize \
+        --enable-pthreads \
+        --enable-ares \
+        --with-default-ssl-backend=openssl \
+        --with-ssl="$openssl_dev_INSTALL_DIR" \
+        --with-nghttp2 \
+        --without-nghttp3 \
+        --without-ngtcp2 \
+        --without-quiche \
+        --without-libpsl \
+        --without-librtmp \
+        --without-libidn2
+
+dotweak: |
+    rm -rf include
+    rm -rf lib
+    rm -rf bin/curl-config
+    rm -rf share/aclocal
+    rm -rf share/man/man3
+
+caveats: |
+    If curl is a fully statically linked executable, to get it working on Android 8 and later, you need to pass --dns-servers=<DNS-SERVERS> argument to curl like below
+
+    curl --dns-servers=8.8.8.8 https://example.com
+parallel: 1
+ndkvers: 26.3.11579264
+builtby: ndk-pkg-0.12.3
+builtat: 1719402192
+buildon:
+    os-arch: x86_64
+    os-kind: linux
+    os-type: linux
+    os-code: ubuntu
+    os-name: Ubuntu
+    os-vers: 24.04
+    os-ncpu: 64
+    os-euid: 1000
+    os-egid: 1000
+builtfor: android-21-arm64-v8a
+profile: release

@@ -1,0 +1,3 @@
+digraph G {
+    "libcurl" -> { "libnghttp2" "libcares" "libzstd" "libz" "brotli" "openssl-dev" }
+}

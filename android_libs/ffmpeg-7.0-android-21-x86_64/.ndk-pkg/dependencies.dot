@@ -1,0 +1,9 @@
+digraph G {
+    "ffmpeg" -> { "libmp3lame" "libtheora" "libvorbis" "libspeex" "librav1e" "libdav1d" "libx264" "libx265" "libopus" "libxvid" "libvpx" "libwebp" "libtiff" "libpng" "libjpeg-turbo" "libgif" "libxml2" "sdl2" }
+    "libxml2" -> { "libiconv" "libz" }
+    "libpng" -> { "libz" }
+    "libtiff" -> { "libzstd" "liblzma" "libz" }
+    "libspeex" -> { "libogg" "libspeexdsp" }
+    "libvorbis" -> { "libogg" }
+    "libtheora" -> { "libogg" }
+}
