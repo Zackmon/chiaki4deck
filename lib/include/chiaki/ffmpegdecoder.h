@@ -11,6 +11,7 @@ extern "C" {
 
 #include <libavcodec/avcodec.h>
 
+
 typedef struct chiaki_ffmpeg_decoder_t ChiakiFfmpegDecoder;
 
 typedef void (*ChiakiFfmpegFrameAvailable)(ChiakiFfmpegDecoder *decover, void *user);
