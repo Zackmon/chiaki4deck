@@ -178,7 +178,12 @@ target_link_libraries(chiaki-lib Nanopb::nanopb)
 target_link_libraries(chiaki-lib Jerasure::Jerasure)
 
 if(CHIAKI_ENABLE_FFMPEG_DECODER)
+	if (ANDROID)
+		#find_package(ffmpeg REQUIRED CONFIG)
+		target_link_libraries(chiaki-lib ffmpeg::libavcodec.a ffmpeg::libavutil.a)
+	else ()
 	target_link_libraries(chiaki-lib FFMPEG::avcodec FFMPEG::avutil)
+	endif ()
 endif()
 
 if(CHIAKI_ENABLE_PI_DECODER)

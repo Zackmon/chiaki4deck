@@ -87,7 +87,11 @@ target_include_directories(chiaki PRIVATE include)
 
 add_library(placebo-libav-impl src/libav_impl.c)
 find_package(libplacebo REQUIRED CONFIG)
+if (ANDROID)
+	target_link_libraries(placebo-libav-impl libplacebo::libplacebo.so ffmpeg::libavcodec.a ffmpeg::libavutil.a ffmpeg::libavformat.a)
+else ()
 target_link_libraries(placebo-libav-impl libplacebo::libplacebo.so FFMPEG::avcodec FFMPEG::avutil FFMPEG::avformat)
+endif ()
 target_link_libraries(chiaki libplacebo::libplacebo.so placebo-libav-impl)
 
 target_link_libraries(chiaki chiaki-lib)
