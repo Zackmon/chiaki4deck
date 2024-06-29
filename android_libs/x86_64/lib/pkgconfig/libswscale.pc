@@ -1,0 +1,12 @@
+prefix=${pcfiledir}/../..
+exec_prefix=${prefix}
+libdir=${pcfiledir}/../../lib
+includedir=${pcfiledir}/../../include
+
+Name: libswscale
+Description: FFmpeg image rescaling library
+Version: 8.1.100
+Requires:  libavutil >= 59.8.100
+Conflicts:
+Libs: -L${libdir}  -lswscale  -lm -latomic
+Cflags: -I${includedir}

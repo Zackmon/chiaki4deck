@@ -1,0 +1,11 @@
+prefix=${pcfiledir}/../..
+exec_prefix=${pcfiledir}/../..
+libdir=${pcfiledir}/../../lib
+includedir=${pcfiledir}/../../include
+
+Name: json-c
+Description: A JSON implementation in C
+Version: 0.17
+Requires:
+Libs: -L${libdir} -ljson-c -lm
+Cflags: -I${includedir} -I${includedir}/json-c

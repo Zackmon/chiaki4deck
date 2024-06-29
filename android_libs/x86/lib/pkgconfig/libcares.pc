@@ -1,0 +1,20 @@
+#***************************************************************************
+# Project        ___       __ _ _ __ ___  ___ 
+#               / __|____ / _` | '__/ _ \/ __|
+#              | (_|_____| (_| | | |  __/\__ \
+#               \___|     \__,_|_|  \___||___/
+#
+# Copyright (C) The c-ares project and its contributors
+# SPDX-License-Identifier: MIT
+prefix=${pcfiledir}/../..
+exec_prefix=${pcfiledir}/../../bin
+libdir=${pcfiledir}/../../lib
+includedir=${pcfiledir}/../../include
+
+Name: c-ares
+URL: https://c-ares.org/
+Description: asynchronous DNS lookup library
+Version: 1.30.0
+Requires:  
+Cflags: -I${includedir}
+Libs: -L${libdir} -lcares 

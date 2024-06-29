@@ -73,10 +73,20 @@ if(APPLE)
 endif()
 
 if (ANDROID)
-	add_library(chiaki SHARED
-			${RESOURCE_FILES}
-			${SOURCE_FILES}
-	)
+
+
+
+        #add_library(chiaki SHARED
+         #               ${RESOURCE_FILES}
+         #               ${SOURCE_FILES}
+        #)
+
+        #set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
+        qt_add_executable(chiaki  ${RESOURCE_FILES} ${SOURCE_FILES})
+        set_property(TARGET chiaki APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
+                         ${CMAKE_CURRENT_SOURCE_DIR}/android)
+
+
 else ()
 	add_executable(chiaki WIN32
 			${RESOURCE_FILES}
@@ -95,28 +105,29 @@ if (ANDROID)
 else ()
 target_link_libraries(placebo-libav-impl PkgConfig::LIBPLACEBO FFMPEG::avcodec FFMPEG::avutil FFMPEG::avformat)
 endif ()
-target_link_libraries(chiaki PkgConfig::LIBPLACEBO placebo-libav-impl)
+target_link_libraries(chiaki PRIVATE PkgConfig::LIBPLACEBO placebo-libav-impl)
 
-target_link_libraries(chiaki chiaki-lib)
+target_link_libraries(chiaki PRIVATE chiaki-lib)
 if(CHIAKI_ENABLE_CLI)
 	add_definitions(-DCHIAKI_ENABLE_CLI)
 	target_link_libraries(chiaki chiaki-cli-lib)
 endif()
 
-target_link_libraries(chiaki Qt::Core Qt::Gui Qt::GuiPrivate Qt::Concurrent Qt::Svg Qt::Qml Qt::Quick)
+target_link_libraries(chiaki PRIVATE Qt::Core Qt::Gui Qt::GuiPrivate Qt::Concurrent Qt::Svg Qt::Qml Qt::Quick)
+
 if (${Qt6DBus_FOUND} AND NOT WIN32)
 	target_link_libraries(chiaki Qt::DBus)
 	target_compile_definitions(chiaki PRIVATE CHIAKI_HAVE_DBUS)
 endif()
 if (ANDROID)
-	pkg_search_module(sdl2 REQUIRED IMPORTED_sdl2 TARGET)
-	target_link_libraries(chiaki PkgConfig::sdl2)
+        pkg_search_module(SDL2 REQUIRED IMPORTED_TARGET sdl2)
+        target_link_libraries(chiaki PRIVATE PkgConfig::SDL2)
 
 else ()
 target_link_libraries(chiaki SDL2::SDL2)
 endif ()
 if(CHIAKI_ENABLE_SPEEX)
-  	target_link_libraries(chiaki PkgConfig::SpeexDSP)
+        target_link_libraries(chiaki PRIVATE PkgConfig::SpeexDSP)
 	target_compile_definitions(chiaki PRIVATE CHIAKI_GUI_ENABLE_SPEEX)
 endif()
 if(CHIAKI_GUI_ENABLE_SDL_GAMECONTROLLER)
@@ -142,14 +153,13 @@ if(APPLE)
 endif()
 
 if (ANDROID)
-	target_link_libraries(${CMAKE_PROJECT_NAME}
-			# List libraries link to the target library
-			android
-			log)
+    #qt_finalize_executable(chiaki)
+
 endif ()
 
 set_target_properties(chiaki PROPERTIES
-		MACOSX_BUNDLE TRUE
+                ${BUNDLE_ID_OPTION}
+                MACOSX_BUNDLE TRUE
 		MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/MacOSXBundleInfo.plist.in"
 		MACOSX_BUNDLE_BUNDLE_NAME Chiaki4deck
 		MACOSX_BUNDLE_BUNDLE_VERSION ${CHIAKI_VERSION}
@@ -158,9 +168,19 @@ set_target_properties(chiaki PROPERTIES
 		MACOSX_BUNDLE_ICON_FILE chiaki4deck.icns
 		RESOURCE "${RESOURCE_FILES}")
 
+            if (ANDROID)
+                include(GNUInstallDirs)
+
+                install(TARGETS chiaki
+                BUNDLE DESTINATION .
+                LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+                )
+            else()
 install(TARGETS chiaki
 		RUNTIME DESTINATION bin
 		BUNDLE DESTINATION bin)
 install(FILES chiaki4deck.desktop DESTINATION share/applications)
 install(FILES chiaki4deck.png DESTINATION share/icons/hicolor/512x512/apps)
 install(FILES io.github.streetpea.Chiaki4deck.appdata.xml DESTINATION share/metainfo)
+endif()

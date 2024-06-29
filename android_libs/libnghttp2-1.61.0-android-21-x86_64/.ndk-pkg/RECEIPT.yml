@@ -1,0 +1,37 @@
+pkgname: libnghttp2
+pkgtype: lib
+version: 1.61.0
+summary: HTTP/2 C Library
+web-url: https://nghttp2.org/
+git-url: https://github.com/nghttp2/nghttp2
+src-url: https://github.com/nghttp2/nghttp2/releases/download/v1.61.0/nghttp2-1.61.0.tar.gz
+src-sha: aa7594c846e56a22fbf3d6e260e472268808d3b49d5e0ed339f589e9cc9d484c
+license: MIT
+
+dep-upp: curl bsdtar cmake ninja
+bsystem: cmake
+binbstd: 0
+install: |
+    cmakew \
+        -DENABLE_DEBUG=OFF \
+        -DENABLE_WERROR=OFF \
+        -DENABLE_THREADS=ON \
+        -DENABLE_LIB_ONLY=ON \
+        -DBUILD_STATIC_LIBS=ON \
+        -DBUILD_SHARED_LIBS=ON
+parallel: 1
+ndkvers: 26.3.11579264
+builtby: ndk-pkg-0.12.3
+builtat: 1719402470
+buildon:
+    os-arch: x86_64
+    os-kind: linux
+    os-type: linux
+    os-code: ubuntu
+    os-name: Ubuntu
+    os-vers: 24.04
+    os-ncpu: 64
+    os-euid: 1000
+    os-egid: 1000
+builtfor: android-21-x86_64
+profile: release
