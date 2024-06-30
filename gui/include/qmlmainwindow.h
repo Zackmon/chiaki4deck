@@ -168,7 +168,7 @@ private:
 #elif defined(Q_OS_WIN32)
         PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
 #elif __ANDROID__
-        PFN_vkCreateAndroidSurfaceKHR  vkCreateAndroidSurfaceKhr;
+        PFN_vkCreateAndroidSurfaceKHR  vkCreateAndroidSurfaceKHR;
 #endif
         PFN_vkDestroySurfaceKHR vkDestroySurfaceKHR;
         PFN_vkWaitSemaphores vkWaitSemaphores;

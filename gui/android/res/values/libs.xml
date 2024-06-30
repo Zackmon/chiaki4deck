@@ -12,6 +12,9 @@
 
     <array name="load_local_libs">
         <!-- %%INSERT_LOCAL_LIBS%% -->
+
+            <item>x86_64;libSDL2.so</item>
+
     </array>
 
     <string name="static_init_classes"><!-- %%INSERT_INIT_CLASSES%% --></string>

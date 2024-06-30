@@ -12,14 +12,20 @@ public class ChiakiActivity extends QtActivityBase{
     @Override
         public void onCreate(Bundle savedInstanceState)
         {
-            Log.d("myTag", "This is chiaki4deck Activity");
-            super.onCreate(savedInstanceState);
-            //Intent intent = new Intent(this, SDLActivity.class);
-            //startActivity(intent);
-            SDL.initialize();
+
+
+
+
+            /*SDL.initialize();
             SDL.setContext( this );
             SDLAudioManager.initialize();
             SDLAudioManager.setContext( this );
+            */
+            Log.d("myTag", "This is chiaki4deck Activity");
+            Intent intent = new Intent(this, SDLActivity.class);
+            startActivity(intent);
+            super.onCreate(savedInstanceState);
+
 
         }
 
@@ -29,9 +35,10 @@ public class ChiakiActivity extends QtActivityBase{
         super.onDestroy();
         Log.d("MySDLActivity", "onDestroy");
         if (SDL.getContext() == this)
-                        {
-                                SDL.setContext( null );
-                        }
+            {
+                 SDL.setContext( null );
+
+            }
     }
 
 }

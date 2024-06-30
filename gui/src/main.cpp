@@ -26,6 +26,11 @@ int main(int argc, char *argv[]) { return real_main(argc, argv); }
 #include <QMap>
 #include <QSurfaceFormat>
 
+#if __ANDROID__
+#define SDL_MAIN_HANDLED
+#include <SDL.h>
+#endif
+
 Q_DECLARE_METATYPE(ChiakiLogLevel)
 Q_DECLARE_METATYPE(ChiakiRegistEventType)
 
@@ -89,7 +94,8 @@ int real_main(int argc, char *argv[])
 
 	if(SDL_Init(SDL_INIT_AUDIO) < 0)
 	{
-		fprintf(stderr, "SDL Audio init failed: %s\n", SDL_GetError());
+        const char * error = SDL_GetError();
+        fprintf(stderr, "SDL Audio init failed: %s\n", error);
 		return 1;
 	}
 

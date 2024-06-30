@@ -382,7 +382,8 @@ void QmlMainWindow::init(Settings *settings)
 #elif defined(Q_OS_WIN32)
     GET_PROC(vkCreateWin32SurfaceKHR)
 #elif __ANDROID__
-    GET_PROC(vkCreateAndroidSurfaceKhr)
+
+    GET_PROC(vkCreateAndroidSurfaceKHR)
 #endif
     GET_PROC(vkDestroySurfaceKHR)
     GET_PROC(vkGetPhysicalDeviceQueueFamilyProperties)
@@ -611,7 +612,7 @@ void QmlMainWindow::createSwapchain()
     VkAndroidSurfaceCreateInfoKHR surfaceInfo = {};
     surfaceInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
     surfaceInfo.window = reinterpret_cast<ANativeWindow *>(winId());
-    err = vk_funcs.vkCreateAndroidSurfaceKhr(placebo_vk_inst->instance,&surfaceInfo, nullptr,&surface);
+    err = vk_funcs.vkCreateAndroidSurfaceKHR(placebo_vk_inst->instance,&surfaceInfo, nullptr,&surface);
 #endif
 
     if (err != VK_SUCCESS)
