@@ -396,7 +396,6 @@ void QmlMainWindow::init(Settings *settings)
             .get_proc_addr = placebo_vk_inst->get_proc_addr,
             .allow_software = true,
             PL_VULKAN_DEFAULTS
-            .num_opt_extensions = 4,
     };
 #elif
     const char *opt_dev_extensions[] = {
