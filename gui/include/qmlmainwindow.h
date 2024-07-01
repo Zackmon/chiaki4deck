@@ -36,6 +36,8 @@ extern "C" {
 #endif
 #endif //__NOVULKAN__
 
+#include <GLES//egl.h>
+
 Q_DECLARE_LOGGING_CATEGORY(chiakiGui);
 
 class Settings;
@@ -140,6 +142,7 @@ private:
     pl_vulkan placebo_vulkan = {};
 #endif
     pl_opengl placebo_opengl = {};
+    EGLConfig config_;
     pl_swapchain placebo_swapchain = {};
     pl_renderer placebo_renderer = {};
     std::array<pl_tex, 8> placebo_tex{};

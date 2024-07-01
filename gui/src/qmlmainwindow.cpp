@@ -496,7 +496,22 @@ void QmlMainWindow::init(Settings *settings)
             .log_level = PL_LOG_DEBUG,
     };
     placebo_log = pl_log_create(PL_API_VER, &log_params);
-    placebo_opengl = pl_opengl_create(placebo_log,&pl_opengl_default_params);
+    EGLDisplay eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+
+    if(!eglInitialize(eglDisplay,0,0)){
+        qFatal("failed to initialize EGL");
+    }
+    const EGLint attribs[] = { EGL_RENDERABLE_TYPE,
+                               EGL_OPENGL_ES2_BIT, //Request opengl ES2.0
+                               EGL_SURFACE_TYPE, EGL_WINDOW_BIT, EGL_BLUE_SIZE, 8, EGL_GREEN_SIZE, 8,
+                               EGL_RED_SIZE, 8, EGL_DEPTH_SIZE, 24, EGL_NONE };
+    EGLContext eglContext = eglCreateContext(eglDisplay,config_, nullptr,attribs);
+
+    struct pl_opengl_params opengl_params = {
+            .get_proc_addr = eglGetProcAddress,
+            .allow_software = true
+    };
+    placebo_opengl = pl_opengl_create(placebo_log,&opengl_params);
     struct pl_cache_params cache_params = {
             .log = placebo_log,
             .max_total_size = 10 << 20, // 10 MB
