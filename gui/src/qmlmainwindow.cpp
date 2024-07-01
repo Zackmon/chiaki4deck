@@ -15,6 +15,7 @@
 #include <QStandardPaths>
 #include <QGuiApplication>
 #include <QVulkanInstance>
+#include <QOpenGLContext>
 #include <QQuickItem>
 #include <QQmlEngine>
 #include <QQmlComponent>
@@ -115,7 +116,7 @@ QmlMainWindow::~QmlMainWindow()
     delete qt_vk_inst;
 
     av_buffer_unref(&vulkan_hw_dev_ctx);
-
+#ifndef __NOVULKAN__
     pl_unmap_avframe(placebo_vulkan->gpu, &current_frame);
     pl_unmap_avframe(placebo_vulkan->gpu, &previous_frame);
 
@@ -124,7 +125,15 @@ QmlMainWindow::~QmlMainWindow()
 
     for (auto tex : placebo_tex)
         pl_tex_destroy(placebo_vulkan->gpu, &tex);
+#else
+    pl_unmap_avframe(placebo_opengl->gpu, &current_frame);
+    pl_unmap_avframe(placebo_opengl->gpu, &previous_frame);
 
+    pl_tex_destroy(placebo_opengl->gpu, &quick_tex);
+
+    for (auto tex : placebo_tex)
+        pl_tex_destroy(placebo_opengl->gpu, &tex);
+#endif
     FILE *file = fopen(qPrintable(shader_cache_path()), "wb");
     if (file) {
         pl_cache_save_file(placebo_cache, file);
@@ -132,8 +141,12 @@ QmlMainWindow::~QmlMainWindow()
     }
     pl_cache_destroy(&placebo_cache);
     pl_renderer_destroy(&placebo_renderer);
+#ifndef __NOVULKAN__
     pl_vulkan_destroy(&placebo_vulkan);
     pl_vk_inst_destroy(&placebo_vk_inst);
+#else
+    pl_opengl_destroy(&placebo_opengl);
+#endif
     pl_log_destroy(&placebo_log);
 }
 
@@ -282,6 +295,7 @@ void QmlMainWindow::presentFrame(AVFrame *frame, int32_t frames_lost)
 
 AVBufferRef *QmlMainWindow::vulkanHwDeviceCtx()
 {
+#ifndef __NOVULKAN__
     if (vulkan_hw_dev_ctx || vk_decode_queue_index < 0)
         return vulkan_hw_dev_ctx;
 
@@ -319,11 +333,14 @@ AVBufferRef *QmlMainWindow::vulkanHwDeviceCtx()
         av_buffer_unref(&vulkan_hw_dev_ctx);
     }
 
+#endif
     return vulkan_hw_dev_ctx;
 }
 
 void QmlMainWindow::init(Settings *settings)
 {
+
+#ifndef __NOVULKAN__
     setSurfaceType(QWindow::VulkanSurface);
 
     const char *vk_exts[] = {
@@ -470,13 +487,53 @@ void QmlMainWindow::init(Settings *settings)
     if (!qt_vk_inst->create())
         qFatal("Failed to create QVulkanInstance");
 
+#endif
+
+////////OPENGL RENDER //////////
+    setSurfaceType(QWindow::OpenGLSurface);
+    struct pl_log_params log_params = {
+            .log_cb = placebo_log_cb,
+            .log_level = PL_LOG_DEBUG,
+    };
+    placebo_log = pl_log_create(PL_API_VER, &log_params);
+    placebo_opengl = pl_opengl_create(placebo_log,&pl_opengl_default_params);
+    struct pl_cache_params cache_params = {
+            .log = placebo_log,
+            .max_total_size = 10 << 20, // 10 MB
+    };
+    placebo_cache = pl_cache_create(&cache_params);
+    pl_gpu_set_cache(placebo_opengl->gpu, placebo_cache);
+    FILE *file = fopen(qPrintable(shader_cache_path()), "rb");
+    if (file) {
+        pl_cache_load_file(placebo_cache, file);
+        fclose(file);
+    }
+
+    placebo_renderer = pl_renderer_create(
+            placebo_log,
+            placebo_opengl->gpu
+    );
+
+    qt_opengl_context = new QOpenGLContext;
+    if (!qt_opengl_context->create()){
+        qFatal("Failed to create QOpenGLContext");
+
+    }
+
     quick_render = new RenderControl(this);
 
     QQuickWindow::setDefaultAlphaBuffer(true);
+#ifndef __NOVULKAN__
     QQuickWindow::setGraphicsApi(QSGRendererInterface::Vulkan);
+#endif
+    QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
     quick_window = new QQuickWindow(quick_render);
+#ifndef __NOVULKAN__
+
     quick_window->setVulkanInstance(qt_vk_inst);
     quick_window->setGraphicsDevice(QQuickGraphicsDevice::fromDeviceObjects(placebo_vulkan->phys_device, placebo_vulkan->device, placebo_vulkan->queue_graphics.index));
+#endif
+    quick_window->setGraphicsDevice(QQuickGraphicsDevice::fromOpenGLContext(qt_opengl_context));
     quick_window->setColor(QColor(0, 0, 0, 0));
     connect(quick_window, &QQuickWindow::focusObjectChanged, this, &QmlMainWindow::focusObjectChanged);
 
@@ -578,7 +635,7 @@ void QmlMainWindow::createSwapchain()
 
     if (placebo_swapchain)
         return;
-
+#ifndef __NOVULKAN__
     VkResult err = VK_ERROR_UNKNOWN;
 #if defined(Q_OS_LINUX) && !__ANDROID__
     if (QGuiApplication::platformName().startsWith("wayland")) {
@@ -623,6 +680,12 @@ void QmlMainWindow::createSwapchain()
         .swapchain_depth = 1,
     };
     placebo_swapchain = pl_vulkan_create_swapchain(placebo_vulkan, &swapchain_params);
+#else
+     struct pl_opengl_swapchain_params swapchain_params = {
+            .max_swapchain_depth = 1
+    };
+#endif
+    placebo_swapchain = pl_opengl_create_swapchain(placebo_opengl,&swapchain_params);
 }
 
 void QmlMainWindow::destroySwapchain()
@@ -633,7 +696,9 @@ void QmlMainWindow::destroySwapchain()
         return;
 
     pl_swapchain_destroy(&placebo_swapchain);
+#ifndef __NOVULKAN__
     vk_funcs.vkDestroySurfaceKHR(placebo_vk_inst->instance, surface, nullptr);
+#endif
 }
 
 void QmlMainWindow::resizeSwapchain()
@@ -650,6 +715,7 @@ void QmlMainWindow::resizeSwapchain()
     swapchain_size = window_size;
     pl_swapchain_resize(placebo_swapchain, &swapchain_size.rwidth(), &swapchain_size.rheight());
 
+#ifndef __NOVULKAN__
     struct pl_tex_params tex_params = {
         .w = swapchain_size.width(),
         .h = swapchain_size.height(),
@@ -659,10 +725,27 @@ void QmlMainWindow::resizeSwapchain()
     };
     if (!pl_tex_recreate(placebo_vulkan->gpu, &quick_tex, &tex_params))
         qCCritical(chiakiGui) << "Failed to create placebo texture";
-
     VkFormat vk_format;
     VkImage vk_image = pl_vulkan_unwrap(placebo_vulkan->gpu, quick_tex, &vk_format, nullptr);
     quick_window->setRenderTarget(QQuickRenderTarget::fromVulkanImage(vk_image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk_format, swapchain_size));
+#else
+    struct pl_tex_params tex_params = {
+            .w = swapchain_size.width(),
+            .h = swapchain_size.height(),
+            .format = pl_find_fmt(placebo_opengl->gpu, PL_FMT_UNORM, 4, 0, 0, PL_FMT_CAP_RENDERABLE),
+            .sampleable = true,
+            .renderable = true,
+    };
+    if (!pl_tex_recreate(placebo_opengl->gpu, &quick_tex, &tex_params))
+        qCCritical(chiakiGui) << "Failed to create placebo texture";
+    unsigned int out_target;
+    int out_iformat;
+    unsigned int textureId =  pl_opengl_unwrap(placebo_opengl->gpu,quick_tex,&out_target, &out_iformat, nullptr);
+    quick_window->setRenderTarget(QQuickRenderTarget::fromOpenGLTexture(textureId,out_iformat,swapchain_size));
+#endif
+
+
+
 }
 
 void QmlMainWindow::updateSwapchain()
@@ -694,6 +777,7 @@ void QmlMainWindow::beginFrame()
     if (quick_frame)
         return;
 
+#ifndef __NOVULKAN__
     struct pl_vulkan_hold_params hold_params = {
         .tex = quick_tex,
         .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -705,6 +789,7 @@ void QmlMainWindow::beginFrame()
     };
     pl_vulkan_hold_ex(placebo_vulkan->gpu, &hold_params);
 
+
     VkSemaphoreWaitInfo wait_info = {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
         .semaphoreCount = 1,
@@ -712,7 +797,7 @@ void QmlMainWindow::beginFrame()
         .pValues = &quick_sem_value,
     };
     vk_funcs.vkWaitSemaphores(placebo_vulkan->device, &wait_info, UINT64_MAX);
-
+#endif
     quick_frame = true;
     quick_render->beginFrame();
 }
@@ -724,13 +809,14 @@ void QmlMainWindow::endFrame()
 
     quick_frame = false;
     quick_render->endFrame();
-
+#ifndef __NOVULKAN__
     struct pl_vulkan_release_params release_params = {
         .tex = quick_tex,
         .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         .qf = VK_QUEUE_FAMILY_IGNORED,
     };
     pl_vulkan_release_ex(placebo_vulkan->gpu, &release_params);
+#endif
 }
 
 void QmlMainWindow::render()
@@ -747,13 +833,21 @@ void QmlMainWindow::render()
 
     frame_mutex.lock();
     if (av_frame || (!has_video && !keep_video)) {
+#ifndef __NOVULKAN__
         pl_unmap_avframe(placebo_vulkan->gpu, &previous_frame);
+#else
+        pl_unmap_avframe(placebo_opengl->gpu, &previous_frame);
+#endif
         if (av_frame && av_frame->decode_error_flags) {
             std::swap(previous_frame, current_frame);
             if (previous_frame.planes[0].texture == *tex)
                 tex = &placebo_tex[4];
         }
+#ifndef __NOVULKAN__
         pl_unmap_avframe(placebo_vulkan->gpu, &current_frame);
+#else
+        pl_unmap_avframe(placebo_opengl->gpu, &current_frame);
+#endif
         std::swap(frame, av_frame);
     }
     frame_mutex.unlock();
@@ -763,8 +857,13 @@ void QmlMainWindow::render()
             .frame = frame,
             .tex = tex,
         };
+#ifndef __NOVULKAN__
         if (!pl_map_avframe_ex(placebo_vulkan->gpu, &current_frame, &avparams))
             qCWarning(chiakiGui) << "Failed to map AVFrame to Placebo frame!";
+#else
+        if (!pl_map_avframe_ex(placebo_opengl->gpu, &current_frame, &avparams))
+            qCWarning(chiakiGui) << "Failed to map AVFrame to Placebo frame!";
+#endif
         av_frame_free(&frame);
     }
 

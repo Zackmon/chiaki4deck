@@ -11,12 +11,16 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavutil/hwcontext_vulkan.h>
 #include <libplacebo/options.h>
+#ifndef __NOVULKAN__
 #include <libplacebo/vulkan.h>
+#endif
 #include <libplacebo/renderer.h>
 #include <libplacebo/log.h>
 #include <libplacebo/cache.h>
+#include <libplacebo/opengl.h>
 }
 
+#ifndef __NOVULKAN__
 #include <vulkan/vulkan.h>
 
 #if defined(Q_OS_LINUX) && ! __ANDROID__
@@ -30,6 +34,7 @@ extern "C" {
 #elif __ANDROID__
 #include <vulkan/vulkan_android.h>
 #endif
+#endif //__NOVULKAN__
 
 Q_DECLARE_LOGGING_CATEGORY(chiakiGui);
 
@@ -130,8 +135,11 @@ private:
 
     pl_cache placebo_cache = {};
     pl_log placebo_log = {};
+#ifndef __NOVULKAN__
     pl_vk_inst placebo_vk_inst = {};
     pl_vulkan placebo_vulkan = {};
+#endif
+    pl_opengl placebo_opengl = {};
     pl_swapchain placebo_swapchain = {};
     pl_renderer placebo_renderer = {};
     std::array<pl_tex, 8> placebo_tex{};
@@ -146,6 +154,7 @@ private:
     std::atomic<bool> render_scheduled = {false};
 
     QVulkanInstance *qt_vk_inst = {};
+    QOpenGLContext *qt_opengl_context = {};
     QQmlEngine *qml_engine = {};
     QQuickWindow *quick_window = {};
     QQuickRenderControl *quick_render = {};
@@ -158,6 +167,7 @@ private:
     bool quick_need_sync = false;
     std::atomic<bool> quick_need_render = {false};
 
+#ifndef __NOVULKAN__
     struct {
         PFN_vkGetDeviceProcAddr vkGetDeviceProcAddr;
 #if defined(Q_OS_LINUX) && ! __ANDROID__
@@ -174,6 +184,6 @@ private:
         PFN_vkWaitSemaphores vkWaitSemaphores;
         PFN_vkGetPhysicalDeviceQueueFamilyProperties vkGetPhysicalDeviceQueueFamilyProperties;
     } vk_funcs;
-
+#endif
     friend class QmlBackend;
 };
