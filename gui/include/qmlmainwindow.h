@@ -38,13 +38,15 @@ extern "C" {
 
 #include <GLES/egl.h>
 #include <GLES2/gl2.h>
+#include <android/native_window.h>
 
 Q_DECLARE_LOGGING_CATEGORY(chiakiGui);
 
 class Settings;
 class StreamSession;
 class QmlBackend;
-
+static EGLContext eglContext;
+static QOpenGLContext *qt_opengl_context = {};
 class QmlMainWindow : public QWindow
 {
     Q_OBJECT
@@ -97,6 +99,9 @@ public:
     void presentFrame(AVFrame *frame, int32_t frames_lost);
 
     AVBufferRef *vulkanHwDeviceCtx();
+    static bool make_current(void *priv);
+    static void make_release(void *priv);
+    static pl_voidfunc_t get_proc_addr (const char *procname);
 
 signals:
     void hasVideoChanged();
@@ -144,6 +149,7 @@ private:
 #endif
     pl_opengl placebo_opengl = {};
     EGLConfig config_;
+
     pl_swapchain placebo_swapchain = {};
     pl_renderer placebo_renderer = {};
     std::array<pl_tex, 8> placebo_tex{};
@@ -158,7 +164,7 @@ private:
     std::atomic<bool> render_scheduled = {false};
 
     QVulkanInstance *qt_vk_inst = {};
-    QOpenGLContext *qt_opengl_context = {};
+
     QQmlEngine *qml_engine = {};
     QQuickWindow *quick_window = {};
     QQuickRenderControl *quick_render = {};
@@ -191,3 +197,6 @@ private:
 #endif
     friend class QmlBackend;
 };
+
+
+

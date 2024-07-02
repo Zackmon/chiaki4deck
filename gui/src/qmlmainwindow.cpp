@@ -517,18 +517,39 @@ void QmlMainWindow::init(Settings *settings)
                     EGL_NONE
             };
 
+    /*EGLSurface eglSurface = eglCreatePbufferSurface(eglDisplay,config_,AttribList);
+    if (!eglSurface){
+        qFatal("eglCreatePbufferSurface Failed");
+    }
+     eglContext = eglCreateContext(eglDisplay,config_, nullptr,AttribList);
+    if (!eglContext){
+        qFatal("eglCreateContext Failed");
+    }*/
 
-    EGLContext eglContext = eglCreateContext(eglDisplay,config_, nullptr,AttribList);
+    qt_opengl_context = new QOpenGLContext;
+    if (!qt_opengl_context->create()){
+        qFatal("Failed to create QOpenGLContext");
+
+    }
+    QNativeInterface::QEGLContext *qeglContext = qt_opengl_context->nativeInterface<QNativeInterface::QEGLContext>();
+    eglContext = qeglContext->nativeContext();
+
     if (!eglContext){
         qFatal("eglCreateContext Failed");
     }
 
+    QSurface *qsurface = qt_opengl_context->surface();
+    if (!qsurface){
+        qFatal("surface Failed");
+    }
+    qt_opengl_context->makeCurrent(qsurface);
 
 
     struct pl_opengl_params opengl_params = {
-            .get_proc_addr_ex = reinterpret_cast<pl_voidfunc_t (*)(void *, const char *)>(eglGetProcAddress),
-            .proc_ctx = eglContext,
-            .allow_software = true
+            .get_proc_addr = get_proc_addr,
+            .allow_software = true,
+            //.make_current = make_current,
+            //.release_current = make_release,
     };
     placebo_opengl = pl_opengl_create(placebo_log,&opengl_params);
     if (!placebo_opengl){
@@ -551,12 +572,6 @@ void QmlMainWindow::init(Settings *settings)
             placebo_opengl->gpu
     );
 
-
-    qt_opengl_context = new QOpenGLContext;
-    if (!qt_opengl_context->create()){
-        qFatal("Failed to create QOpenGLContext");
-
-    }
 
 
     quick_render = new RenderControl(this);
@@ -1124,4 +1139,20 @@ bool QmlMainWindow::event(QEvent *event)
 QObject *QmlMainWindow::focusObject() const
 {
     return quick_window->focusObject();
+}
+
+bool QmlMainWindow::make_current(void *priv) {
+    eglMakeCurrent(eglGetDisplay(EGL_DEFAULT_DISPLAY), nullptr, nullptr,eglContext);
+    return true;
+}
+
+void QmlMainWindow::make_release(void *priv) {
+    eglMakeCurrent(eglGetDisplay(EGL_DEFAULT_DISPLAY), nullptr, nullptr,NULL);
+
+}
+
+pl_voidfunc_t QmlMainWindow::get_proc_addr(const char *procname) {
+    QFunctionPointer qFunctionPointer = qt_opengl_context->getProcAddress(procname);
+
+    return qFunctionPointer;
 }
