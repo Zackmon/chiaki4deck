@@ -503,15 +503,37 @@ void QmlMainWindow::init(Settings *settings)
     }
     const EGLint attribs[] = { EGL_RENDERABLE_TYPE,
                                EGL_OPENGL_ES2_BIT, //Request opengl ES2.0
-                               EGL_SURFACE_TYPE, EGL_WINDOW_BIT, EGL_BLUE_SIZE, 8, EGL_GREEN_SIZE, 8,
-                               EGL_RED_SIZE, 8, EGL_DEPTH_SIZE, 24, EGL_NONE };
-    EGLContext eglContext = eglCreateContext(eglDisplay,config_, nullptr,attribs);
+                               EGL_NONE };
+
+    EGLint numConfigs;
+
+    if (!eglChooseConfig(eglDisplay,attribs,&config_,1,&numConfigs)){
+        qFatal("EGL Choose config failed");
+    }
+
+    EGLint AttribList[] =
+            {
+                    EGL_CONTEXT_CLIENT_VERSION, 2,
+                    EGL_NONE
+            };
+
+
+    EGLContext eglContext = eglCreateContext(eglDisplay,config_, nullptr,AttribList);
+    if (!eglContext){
+        qFatal("eglCreateContext Failed");
+    }
+
+
 
     struct pl_opengl_params opengl_params = {
-            .get_proc_addr = eglGetProcAddress,
+            .get_proc_addr_ex = reinterpret_cast<pl_voidfunc_t (*)(void *, const char *)>(eglGetProcAddress),
+            .proc_ctx = eglContext,
             .allow_software = true
     };
     placebo_opengl = pl_opengl_create(placebo_log,&opengl_params);
+    if (!placebo_opengl){
+        qFatal("pl_opengl_create failed");
+    }
     struct pl_cache_params cache_params = {
             .log = placebo_log,
             .max_total_size = 10 << 20, // 10 MB
@@ -529,11 +551,13 @@ void QmlMainWindow::init(Settings *settings)
             placebo_opengl->gpu
     );
 
+
     qt_opengl_context = new QOpenGLContext;
     if (!qt_opengl_context->create()){
         qFatal("Failed to create QOpenGLContext");
 
     }
+
 
     quick_render = new RenderControl(this);
 

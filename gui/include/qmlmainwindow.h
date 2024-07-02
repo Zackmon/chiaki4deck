@@ -36,7 +36,8 @@ extern "C" {
 #endif
 #endif //__NOVULKAN__
 
-#include <GLES//egl.h>
+#include <GLES/egl.h>
+#include <GLES2/gl2.h>
 
 Q_DECLARE_LOGGING_CATEGORY(chiakiGui);
 
