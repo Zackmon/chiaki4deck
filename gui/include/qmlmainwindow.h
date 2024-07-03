@@ -39,6 +39,7 @@ extern "C" {
 #include <GLES/egl.h>
 #include <GLES2/gl2.h>
 #include <android/native_window.h>
+#include <QOpenGLFunctions>
 
 Q_DECLARE_LOGGING_CATEGORY(chiakiGui);
 

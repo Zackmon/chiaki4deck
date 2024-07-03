@@ -3,6 +3,8 @@ package org.chiaki4deck.chiaki4deck;
 import org.libsdl.app.SDLActivity;
 import org.libsdl.app.SDL;
 import org.libsdl.app.SDLAudioManager;
+import org.libsdl.app.SDLControllerManager;
+import org.libsdl.app.HIDDeviceManager;
 import android.os.Bundle;
 import android.os.Build;
 import android.os.Handler;
@@ -28,6 +30,9 @@ public class ChiakiActivity extends QtActivityBase{
             SDL.setupJNI();
             SDL.initialize();
             SDL.setContext( this );
+            SDLControllerManager.initialize();
+            SDLControllerManager.nativeSetupJNI();
+            HIDDeviceManager.acquire(this);
 
 
             super.onCreate(savedInstanceState);

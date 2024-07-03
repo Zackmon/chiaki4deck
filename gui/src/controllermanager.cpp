@@ -105,6 +105,7 @@ ControllerManager::ControllerManager(QObject *parent)
 	SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5_RUMBLE, "1");
 	SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
 	if(SDL_Init(SDL_INIT_GAMECONTROLLER) < 0)
+        qWarning("Failed to initiate SDL_INIT_GAMECONTROLLER ");
 		return;
 
 	auto timer = new QTimer(this);

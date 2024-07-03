@@ -490,6 +490,7 @@ void QmlMainWindow::init(Settings *settings)
 #endif
 
 ////////OPENGL RENDER //////////
+    create();
     setSurfaceType(QWindow::OpenGLSurface);
     struct pl_log_params log_params = {
             .log_cb = placebo_log_cb,
@@ -526,23 +527,20 @@ void QmlMainWindow::init(Settings *settings)
         qFatal("eglCreateContext Failed");
     }*/
 
-    qt_opengl_context = new QOpenGLContext;
-    if (!qt_opengl_context->create()){
-        qFatal("Failed to create QOpenGLContext");
-
+    qt_opengl_context = QOpenGLContext::currentContext();
+    if (!qt_opengl_context){
+        qWarning("There is no currentContext for OpenGL , trying to make one ");
+        qt_opengl_context = new QOpenGLContext(this);
+        if (!qt_opengl_context->create()){
+            qFatal("Failed to create QOpenGLContext");
+        }
+        if (!qt_opengl_context->makeCurrent(this)){
+            qFatal("Failed to makeCurrent");
+        }
     }
-    QNativeInterface::QEGLContext *qeglContext = qt_opengl_context->nativeInterface<QNativeInterface::QEGLContext>();
-    eglContext = qeglContext->nativeContext();
 
-    if (!eglContext){
-        qFatal("eglCreateContext Failed");
-    }
-
-    QSurface *qsurface = qt_opengl_context->surface();
-    if (!qsurface){
-        qFatal("surface Failed");
-    }
-    qt_opengl_context->makeCurrent(qsurface);
+    QOpenGLFunctions *qOpenGlFunctions = new QOpenGLFunctions(qt_opengl_context);
+    qOpenGlFunctions->initializeOpenGLFunctions();
 
 
     struct pl_opengl_params opengl_params = {
@@ -575,6 +573,7 @@ void QmlMainWindow::init(Settings *settings)
 
 
     quick_render = new RenderControl(this);
+
 
     QQuickWindow::setDefaultAlphaBuffer(true);
 #ifndef __NOVULKAN__
@@ -615,6 +614,10 @@ void QmlMainWindow::init(Settings *settings)
 
     quick_render->prepareThread(render_thread);
     quick_render->moveToThread(render_thread);
+    qt_opengl_context->moveToThread(render_thread);
+    if (!qt_opengl_context->makeCurrent(quick_render->window())){
+        qFatal("We made a bobo");
+    }
 
     connect(quick_render, &QQuickRenderControl::sceneChanged, this, [this]() {
         quick_need_sync = true;
@@ -1153,6 +1156,5 @@ void QmlMainWindow::make_release(void *priv) {
 
 pl_voidfunc_t QmlMainWindow::get_proc_addr(const char *procname) {
     QFunctionPointer qFunctionPointer = qt_opengl_context->getProcAddress(procname);
-
     return qFunctionPointer;
 }
