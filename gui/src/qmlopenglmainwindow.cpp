@@ -221,8 +221,9 @@ void QmlOpenGLMainWindow::presentFrame(AVFrame *frame, int32_t frames_lost)
 
 void QmlOpenGLMainWindow::init(Settings *settings) {
     qWarning("Called Init");
-    create();
     setSurfaceType(QWindow::OpenGLSurface);
+    create();
+
 
 
     struct pl_log_params log_params = {
@@ -234,7 +235,7 @@ void QmlOpenGLMainWindow::init(Settings *settings) {
     qt_opengl_context = QOpenGLContext::currentContext();
     if (!qt_opengl_context){
         qWarning("There is no currentContext for OpenGL , trying to make one ");
-        qt_opengl_context = new QOpenGLContext(this);
+        qt_opengl_context = new QOpenGLContext();
         qt_opengl_context->setFormat(requestedFormat());
         if (!qt_opengl_context->create()){
             qFatal("Failed to create QOpenGLContext");
