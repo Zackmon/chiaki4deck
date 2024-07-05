@@ -41,7 +41,7 @@
 #define PL_HAVE_LCMS 1
 #undef PL_HAVE_LIBDOVI
 #define PL_HAVE_OPENGL 1
-#undef PL_HAVE_SHADERC
+#define PL_HAVE_SHADERC 1
 #define PL_HAVE_VK_PROC_ADDR 1
 #define PL_HAVE_VULKAN 1
 #undef PL_HAVE_XXHASH

@@ -15,7 +15,8 @@
 #ndk-pkg pack android-21-armeabi-v7a/libzstd
 #ndk-pkg pack android-21-armeabi-v7a/libz
 #ndk-pkg pack android-21-armeabi-v7a/libbrotlidec
-ndk-pkg pack android-21-armeabi-v7a/libvpx
+#ndk-pkg pack android-21-armeabi-v7a/libvpx
+ndk-pkg pack android-24-armeabi-v7a/shaderc
 
 #ndk-pkg pack android-21-arm64-v8a/libcurl
 #ndk-pkg pack android-21-arm64-v8a/json-c
@@ -34,7 +35,8 @@ ndk-pkg pack android-21-armeabi-v7a/libvpx
 #ndk-pkg pack android-21-arm64-v8a/libz
 #ndk-pkg pack android-21-arm64-v8a/libbrotlidec
 
-ndk-pkg pack android-21-arm64-v8a/libvpx
+#ndk-pkg pack android-21-arm64-v8a/libvpx
+ndk-pkg pack android-24-arm64-v8a/shaderc
 
 #ndk-pkg pack android-21-x86/libcurl
 #ndk-pkg pack android-21-x86/json-c
@@ -53,7 +55,8 @@ ndk-pkg pack android-21-arm64-v8a/libvpx
 #ndk-pkg pack android-21-x86/libz
 #ndk-pkg pack android-21-x86/libbrotlidec
 
-ndk-pkg pack android-21-x86/libvpx
+#ndk-pkg pack android-21-x86/libvpx
+ndk-pkg pack android-24-x86/shaderc
 
 
 #ndk-pkg pack android-21-x86_64/libcurl
@@ -72,4 +75,5 @@ ndk-pkg pack android-21-x86/libvpx
 #ndk-pkg pack android-21-x86_64/libzstd
 #ndk-pkg pack android-21-x86_64/libz
 #ndk-pkg pack android-21-x86_64/libbrotlidec
-ndk-pkg pack android-21-x86_64/libvpx
+#ndk-pkg pack android-21-x86_64/libvpx
+ndk-pkg pack android-24-x86_64/shaderc

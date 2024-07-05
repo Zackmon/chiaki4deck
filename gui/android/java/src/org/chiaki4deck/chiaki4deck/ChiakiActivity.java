@@ -22,6 +22,7 @@ public class ChiakiActivity extends QtActivityBase{
     @Override
         public void onCreate(Bundle savedInstanceState)
         {
+            super.onCreate(savedInstanceState);
             Log.v(TAG, "Device: " + Build.DEVICE);
             Log.v(TAG, "Model: " + Build.MODEL);
             Log.v(TAG, "onCreate()");
@@ -35,7 +36,7 @@ public class ChiakiActivity extends QtActivityBase{
             HIDDeviceManager.acquire(this);
 
 
-            super.onCreate(savedInstanceState);
+
             /*Log.d("myTag", "This is chiaki4deck Activity");
             Intent intent = new Intent(this, SDLActivity.class);
             startActivity(intent);*/

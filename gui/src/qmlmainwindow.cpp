@@ -70,6 +70,8 @@ public:
         return window;
     }
 
+
+
 private:
     QWindow *window = {};
 };
@@ -115,8 +117,9 @@ QmlMainWindow::~QmlMainWindow()
     delete qml_engine;
     delete qt_vk_inst;
 
-    av_buffer_unref(&vulkan_hw_dev_ctx);
+
 #ifndef __NOVULKAN__
+    av_buffer_unref(&vulkan_hw_dev_ctx);
     pl_unmap_avframe(placebo_vulkan->gpu, &current_frame);
     pl_unmap_avframe(placebo_vulkan->gpu, &previous_frame);
 
@@ -246,6 +249,8 @@ void QmlMainWindow::setVideoPreset(VideoPreset preset)
 
 void QmlMainWindow::show()
 {
+
+
     QQmlComponent component(qml_engine, QUrl(QStringLiteral("qrc:/Main.qml")));
     if (!component.isReady()) {
         qCCritical(chiakiGui) << "Component not ready\n" << component.errors();
@@ -334,6 +339,7 @@ AVBufferRef *QmlMainWindow::vulkanHwDeviceCtx()
     }
 
 #endif
+
     return vulkan_hw_dev_ctx;
 }
 
@@ -414,7 +420,7 @@ void QmlMainWindow::init(Settings *settings)
             .allow_software = true,
             PL_VULKAN_DEFAULTS
     };
-#elif
+#else
     const char *opt_dev_extensions[] = {
         VK_KHR_VIDEO_QUEUE_EXTENSION_NAME,
         VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME,
@@ -452,7 +458,7 @@ void QmlMainWindow::init(Settings *settings)
     auto queue_it = std::find_if(queueFamilyProperties.begin(), queueFamilyProperties.end(), [](VkQueueFamilyProperties prop) {
 #if __ANDROID__
         return prop.queueFlags;
-#elif
+#else
         return prop.queueFlags & VK_QUEUE_VIDEO_DECODE_BIT_KHR;
 #endif
 
@@ -487,7 +493,7 @@ void QmlMainWindow::init(Settings *settings)
     if (!qt_vk_inst->create())
         qFatal("Failed to create QVulkanInstance");
 
-#endif
+#else
 
 ////////OPENGL RENDER //////////
     create();
@@ -530,7 +536,7 @@ void QmlMainWindow::init(Settings *settings)
     qt_opengl_context = QOpenGLContext::currentContext();
     if (!qt_opengl_context){
         qWarning("There is no currentContext for OpenGL , trying to make one ");
-        qt_opengl_context = new QOpenGLContext(this);
+        qt_opengl_context = new QOpenGLContext();
         if (!qt_opengl_context->create()){
             qFatal("Failed to create QOpenGLContext");
         }
@@ -570,7 +576,7 @@ void QmlMainWindow::init(Settings *settings)
             placebo_opengl->gpu
     );
 
-
+#endif
 
     quick_render = new RenderControl(this);
 
@@ -586,7 +592,9 @@ void QmlMainWindow::init(Settings *settings)
     quick_window->setVulkanInstance(qt_vk_inst);
     quick_window->setGraphicsDevice(QQuickGraphicsDevice::fromDeviceObjects(placebo_vulkan->phys_device, placebo_vulkan->device, placebo_vulkan->queue_graphics.index));
 #endif
+
     quick_window->setGraphicsDevice(QQuickGraphicsDevice::fromOpenGLContext(qt_opengl_context));
+
     quick_window->setColor(QColor(0, 0, 0, 0));
     connect(quick_window, &QQuickWindow::focusObjectChanged, this, &QmlMainWindow::focusObjectChanged);
 
@@ -596,7 +604,7 @@ void QmlMainWindow::init(Settings *settings)
         qml_engine->setIncubationController(quick_window->incubationController());
     connect(qml_engine, &QQmlEngine::quit, this, &QWindow::close);
 
-    backend = new QmlBackend(settings, this);
+    /*backend = new QmlBackend(settings, this);
     connect(backend, &QmlBackend::sessionChanged, this, [this](StreamSession *s) {
         session = s;
         grab_input = 0;
@@ -607,17 +615,20 @@ void QmlMainWindow::init(Settings *settings)
         }
     });
     connect(backend, &QmlBackend::windowTypeUpdated, this, &QmlMainWindow::updateWindowType);
-
+*/
     render_thread = new QThread;
-    render_thread->setObjectName("render");
+    render_thread->setObjectName("renderControlThread");
     render_thread->start();
 
     quick_render->prepareThread(render_thread);
-    quick_render->moveToThread(render_thread);
-    qt_opengl_context->moveToThread(render_thread);
-    if (!qt_opengl_context->makeCurrent(quick_render->window())){
-        qFatal("We made a bobo");
+
+    if(!qt_opengl_context->moveToThread(render_thread)){
+        QString string = qt_opengl_context->parent()->objectName();
+
+        qWarning("parent %s",string.toStdString().c_str());
+        qFatal("Failed to move context to render thread");
     }
+    quick_render->moveToThread(render_thread);
 
     connect(quick_render, &QQuickRenderControl::sceneChanged, this, [this]() {
         quick_need_sync = true;
@@ -689,6 +700,9 @@ void QmlMainWindow::scheduleUpdate()
 void QmlMainWindow::createSwapchain()
 {
     Q_ASSERT(QThread::currentThread() == render_thread);
+    if(!qt_opengl_context->makeCurrent(this)){
+        qFatal("Failed to make context current");
+    }
 
     if (placebo_swapchain)
         return;
@@ -739,15 +753,25 @@ void QmlMainWindow::createSwapchain()
     placebo_swapchain = pl_vulkan_create_swapchain(placebo_vulkan, &swapchain_params);
 #else
      struct pl_opengl_swapchain_params swapchain_params = {
-            .max_swapchain_depth = 1
+             .swap_buffers = (void (*)(void *)) swapBuffers,
+            .max_swapchain_depth = 1,
+            .priv = qt_opengl_context->surface()
+
     };
-#endif
     placebo_swapchain = pl_opengl_create_swapchain(placebo_opengl,&swapchain_params);
+
+#endif
 }
 
 void QmlMainWindow::destroySwapchain()
 {
     Q_ASSERT(QThread::currentThread() == render_thread);
+    if (!qt_opengl_context->moveToThread(render_thread)){
+        qFatal("Failed to move thread");
+    }
+    if(!qt_opengl_context->makeCurrent(this)){
+        qFatal("Failed to make context current");
+    }
 
     if (!placebo_swapchain)
         return;
@@ -761,6 +785,9 @@ void QmlMainWindow::destroySwapchain()
 void QmlMainWindow::resizeSwapchain()
 {
     Q_ASSERT(QThread::currentThread() == render_thread);
+    if(!qt_opengl_context->makeCurrent(this)){
+        qFatal("Failed to make context current");
+    }
 
     if (!placebo_swapchain)
         createSwapchain();
@@ -821,6 +848,9 @@ void QmlMainWindow::updateSwapchain()
 void QmlMainWindow::sync()
 {
     Q_ASSERT(QThread::currentThread() == render_thread);
+    if(!qt_opengl_context->makeCurrent(this)){
+        qFatal("Failed to make context current");
+    }
 
     if (!quick_tex)
         return;
@@ -879,7 +909,9 @@ void QmlMainWindow::endFrame()
 void QmlMainWindow::render()
 {
     Q_ASSERT(QThread::currentThread() == render_thread);
-
+    if(!qt_opengl_context->makeCurrent(this)){
+        qFatal("Failed to make context current");
+    }
     render_scheduled = false;
 
     if (!placebo_swapchain)
@@ -1015,7 +1047,7 @@ void QmlMainWindow::render()
     if (!pl_swapchain_submit_frame(placebo_swapchain))
         qCWarning(chiakiGui) << "Failed to submit Placebo frame!";
 
-    pl_swapchain_swap_buffers(placebo_swapchain);
+    //pl_swapchain_swap_buffers(placebo_swapchain);
 }
 
 bool QmlMainWindow::handleShortcut(QKeyEvent *event)
@@ -1144,17 +1176,12 @@ QObject *QmlMainWindow::focusObject() const
     return quick_window->focusObject();
 }
 
-bool QmlMainWindow::make_current(void *priv) {
-    eglMakeCurrent(eglGetDisplay(EGL_DEFAULT_DISPLAY), nullptr, nullptr,eglContext);
-    return true;
-}
-
-void QmlMainWindow::make_release(void *priv) {
-    eglMakeCurrent(eglGetDisplay(EGL_DEFAULT_DISPLAY), nullptr, nullptr,NULL);
-
-}
 
 pl_voidfunc_t QmlMainWindow::get_proc_addr(const char *procname) {
     QFunctionPointer qFunctionPointer = qt_opengl_context->getProcAddress(procname);
-    return qFunctionPointer;
+   return qFunctionPointer;
+}
+
+void QmlMainWindow::swapBuffers(QSurface *surface) {
+    qt_opengl_context->swapBuffers(surface);
 }

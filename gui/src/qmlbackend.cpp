@@ -1,6 +1,6 @@
 #include "qmlbackend.h"
 #include "qmlsettings.h"
-#include "qmlmainwindow.h"
+//#include "qmlmainwindow.h"
 #include "streamsession.h"
 #include "controllermanager.h"
 #include "psnaccountid.h"
@@ -84,7 +84,7 @@ void QmlRegist::regist_cb(ChiakiRegistEvent *event, void *user)
     }
 }
 
-QmlBackend::QmlBackend(Settings *settings, QmlMainWindow *window)
+/*QmlBackend::QmlBackend(Settings *settings, QmlMainWindow *window)
     : QObject(window)
     , settings(settings)
     , settings_qml(new QmlSettings(settings, this))
@@ -224,6 +224,148 @@ QmlBackend::QmlBackend(Settings *settings, QmlMainWindow *window)
         }
     });
     refreshPsnToken();
+}*/
+
+QmlBackend::QmlBackend(Settings *settings, QmlOpenGLMainWindow *window)
+        : QObject(window)
+        , settings(settings)
+        , settings_qml(new QmlSettings(settings, this))
+        , window(window)
+{
+    qt_msg_handler = qInstallMessageHandler(msg_handler);
+
+    const char *uri = "org.streetpea.chiaki4deck";
+    qmlRegisterSingletonInstance(uri, 1, 0, "Chiaki", this);
+    qmlRegisterUncreatableType<QmlOpenGLMainWindow>(uri, 1, 0, "ChiakiWindow", {});
+    qmlRegisterUncreatableType<QmlSettings>(uri, 1, 0, "ChiakiSettings", {});
+    qmlRegisterUncreatableType<StreamSession>(uri, 1, 0, "ChiakiSession", {});
+
+    QObject *frame_obj = new QObject();
+    frame_thread = new QThread(frame_obj);
+    frame_thread->setObjectName("frame");
+    frame_thread->start();
+    frame_obj->moveToThread(frame_thread);
+
+    PsnConnectionWorker *worker = new PsnConnectionWorker;
+    worker->moveToThread(&psn_connection_thread);
+    connect(&psn_connection_thread, &QThread::finished, worker, &QObject::deleteLater);
+    connect(this, &QmlBackend::psnConnect, worker, &PsnConnectionWorker::ConnectPsnConnection);
+    connect(worker, &PsnConnectionWorker::resultReady, this, &QmlBackend::checkPsnConnection);
+    psn_connection_thread.start();
+
+    setConnectState(PsnConnectState::NotStarted);
+    connect(settings, &Settings::RegisteredHostsUpdated, this, &QmlBackend::hostsChanged);
+    connect(settings, &Settings::ManualHostsUpdated, this, &QmlBackend::hostsChanged);
+    connect(&discovery_manager, &DiscoveryManager::HostsUpdated, this, &QmlBackend::updateDiscoveryHosts);
+    discovery_manager.SetSettings(settings);
+    setDiscoveryEnabled(true);
+
+    connect(ControllerManager::GetInstance(), &ControllerManager::AvailableControllersUpdated, this, &QmlBackend::updateControllers);
+    updateControllers();
+
+    auto_connect_mac = settings->GetAutoConnectHost().GetServerMAC();
+    auto_connect_nickname = settings->GetAutoConnectHost().GetServerNickname();
+    psn_auto_connect_timer = new QTimer(this);
+    psn_auto_connect_timer->setSingleShot(true);
+    psn_reconnect_tries = 0;
+    psn_reconnect_timer = new QTimer(this);
+    if(autoConnect() && !auto_connect_nickname.isEmpty())
+    {
+        connect(psn_auto_connect_timer, &QTimer::timeout, this, [this, settings]
+        {
+            int i = 0;
+            for (const auto &host : std::as_const(psn_hosts))
+            {
+                if(host.GetName() == auto_connect_nickname)
+                {
+                    int index = discovery_manager.GetHosts().size() + settings->GetManualHosts().size() + i;
+                    connectToHost(index);
+                    return;
+                }
+                i++;
+            }
+            qCWarning(chiakiGui) << "Couldn't find PSN host with the requested nickname: " << auto_connect_nickname;
+        });
+        psn_auto_connect_timer->start(PSN_INTERNET_WAIT_SECONDS * 1000);
+    }
+    connect(psn_reconnect_timer, &QTimer::timeout, this, [this, settings]{
+        QString refresh = settings->GetPsnRefreshToken();
+        if(refresh.isEmpty())
+        {
+            qCWarning(chiakiGui) << "No refresh token found, can't refresh PSN token to use PSN remote connection";
+            psn_reconnect_tries = 0;
+            resume_session = false;
+            psn_reconnect_timer->stop();
+            setConnectState(PsnConnectState::ConnectFailed);
+            return;
+        }
+        PSNToken *psnToken = new PSNToken(settings, this);
+        connect(psnToken, &PSNToken::PSNTokenError, this, [this](const QString &error) {
+            qCWarning(chiakiGui) << "Internet is currently down...waiting 5 seconds" << error;
+            psn_reconnect_tries++;
+            if(psn_reconnect_tries < MAX_PSN_RECONNECT_TRIES)
+                return;
+            else
+            {
+                resume_session = false;
+                psn_reconnect_tries = 0;
+                psn_reconnect_timer->stop();
+                setConnectState(PsnConnectState::ConnectFailed);
+            }
+        });
+        connect(psnToken, &PSNToken::UnauthorizedError, this, &QmlBackend::psnCredsExpired);
+        connect(psnToken, &PSNToken::PSNTokenSuccess, this, []() {
+            qCWarning(chiakiGui) << "PSN Remote Connection Tokens Refreshed. Internet is back up";
+        });
+        connect(psnToken, &PSNToken::PSNTokenSuccess, this, [this]() {
+            resume_session = false;
+            psn_reconnect_tries = 0;
+            psn_reconnect_timer->stop();
+            createSession(session_info);
+        });
+        QString refresh_token = settings->GetPsnRefreshToken();
+        psnToken->RefreshPsnToken(refresh_token);
+    });
+    sleep_inhibit = new SystemdInhibit(QGuiApplication::applicationName(), tr("Remote Play session"), "sleep", "delay", this);
+    connect(sleep_inhibit, &SystemdInhibit::sleep, this, [this]() {
+        qCInfo(chiakiGui) << "About to sleep";
+        if (session) {
+            if (this->settings->GetSuspendAction() == SuspendAction::Sleep)
+                session->GoToBed();
+            session->Stop();
+            psnCancel(true);
+            resume_session = true;
+        }
+    });
+    connect(sleep_inhibit, &SystemdInhibit::resume, this, [this, settings]() {
+        qCInfo(chiakiGui) << "Resumed from sleep";
+        if (resume_session) {
+            qCInfo(chiakiGui) << "Resuming session...";
+            resume_session = false;
+            if(session_info.duid.isEmpty())
+            {
+                createSession({
+                                      session_info.settings,
+                                      session_info.target,
+                                      session_info.host,
+                                      session_info.regist_key,
+                                      session_info.morning,
+                                      session_info.initial_login_pin,
+                                      session_info.duid,
+                                      session_info.fullscreen,
+                                      session_info.zoom,
+                                      session_info.stretch,
+                              });
+            }
+            else
+            {
+                emit showPsnView();
+                setConnectState(PsnConnectState::WaitingForInternet);
+                psn_reconnect_timer->start(PSN_INTERNET_WAIT_SECONDS * 1000);
+            }
+        }
+    });
+    refreshPsnToken();
 }
 
 QmlBackend::~QmlBackend()
@@ -237,7 +379,7 @@ QmlBackend::~QmlBackend()
     psn_connection_thread.wait();
 }
 
-QmlMainWindow *QmlBackend::qmlWindow() const
+QmlOpenGLMainWindow *QmlBackend::qmlWindow() const
 {
     return window;
 }
@@ -457,7 +599,7 @@ void QmlBackend::createSession(const StreamSessionConnectInfo &connect_info)
     }
 
     if (session_info.hw_decoder == "vulkan") {
-        session_info.hw_device_ctx = window->vulkanHwDeviceCtx();
+        session_info.hw_device_ctx = nullptr;//window->vulkanHwDeviceCtx();
         if (!session_info.hw_device_ctx)
         {
             session_info.hw_decoder.clear();
@@ -516,7 +658,8 @@ void QmlBackend::createSession(const StreamSessionConnectInfo &connect_info)
             av_frame_unref(frame);
             frame = sw_frame;
         }
-        QMetaObject::invokeMethod(window, std::bind(&QmlMainWindow::presentFrame, window, frame, frames_lost));
+//        QMetaObject::invokeMethod(window, std::bind(&QmlMainWindow::presentFrame, window, frame, frames_lost));
+        QMetaObject::invokeMethod(window, std::bind(&QmlOpenGLMainWindow::presentFrame, window, frame, frames_lost));
     });
 
     connect(session, &StreamSession::SessionQuit, this, [this](ChiakiQuitReason reason, const QString &reason_str) {

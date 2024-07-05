@@ -49,6 +49,8 @@ set(SOURCE_FILES
 	src/qmlsvgprovider.cpp
 	include/systemdinhibit.h
 	src/systemdinhibit.cpp
+        include/qmlopenglmainwindow.h
+        src/qmlopenglmainwindow.cpp
 	)
 set(RESOURCE_FILES "")
 
@@ -82,12 +84,15 @@ if (ANDROID)
         #)
 
         #set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
-        qt_add_executable(chiaki  ${RESOURCE_FILES} ${SOURCE_FILES})
+        qt_add_executable(chiaki  ${RESOURCE_FILES} ${SOURCE_FILES}
+                                )
         set_property(TARGET chiaki APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
                          ${CMAKE_CURRENT_SOURCE_DIR}/android)
 
 
 else ()
+	#qt_add_executable(chiaki  ${RESOURCE_FILES} ${SOURCE_FILES}
+	#)
 	add_executable(chiaki WIN32
 			${RESOURCE_FILES}
 			${SOURCE_FILES}
@@ -110,13 +115,13 @@ target_link_libraries(chiaki PRIVATE PkgConfig::LIBPLACEBO placebo-libav-impl)
 target_link_libraries(chiaki PRIVATE chiaki-lib)
 if(CHIAKI_ENABLE_CLI)
 	add_definitions(-DCHIAKI_ENABLE_CLI)
-	target_link_libraries(chiaki chiaki-cli-lib)
+        target_link_libraries(chiaki PRIVATE chiaki-cli-lib)
 endif()
 
 target_link_libraries(chiaki PRIVATE Qt::Core Qt::Gui Qt::GuiPrivate Qt::Concurrent Qt::Svg Qt::Qml Qt::Quick)
 
 if (${Qt6DBus_FOUND} AND NOT WIN32)
-	target_link_libraries(chiaki Qt::DBus)
+        target_link_libraries(chiaki PRIVATE Qt::DBus)
 	target_compile_definitions(chiaki PRIVATE CHIAKI_HAVE_DBUS)
 endif()
 if (ANDROID)
@@ -124,7 +129,7 @@ if (ANDROID)
         target_link_libraries(chiaki PRIVATE PkgConfig::SDL2)
 
 else ()
-target_link_libraries(chiaki SDL2::SDL2)
+target_link_libraries(chiaki PRIVATE SDL2::SDL2)
 endif ()
 if(CHIAKI_ENABLE_SPEEX)
         target_link_libraries(chiaki PRIVATE PkgConfig::SpeexDSP)
@@ -138,11 +143,11 @@ if(CHIAKI_ENABLE_SETSU)
 	target_compile_definitions(chiaki PRIVATE CHIAKI_GUI_ENABLE_SETSU)
 endif()
 if(CHIAKI_ENABLE_STEAMDECK_NATIVE)
-	target_link_libraries(chiaki sdeck)
+        target_link_libraries(chiaki PRIVATE sdeck)
 	target_compile_definitions(chiaki PRIVATE QT_STATICPLUGIN CHIAKI_GUI_ENABLE_STEAMDECK_NATIVE)
 endif()
 if(CHIAKI_ENABLE_STEAM_SHORTCUT)
-	target_link_libraries(chiaki cpp-steam-tools)
+        target_link_libraries(chiaki PRIVATE cpp-steam-tools)
 	target_compile_definitions(chiaki PRIVATE CHIAKI_GUI_ENABLE_STEAM_SHORTCUT)
 endif()
 if(NOT CHIAKI_ENABLE_FFMPEG_DECODER)

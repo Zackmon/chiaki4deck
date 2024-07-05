@@ -183,7 +183,7 @@ else()
 		target_include_directories(chiaki-lib PRIVATE ${LIBSSL_INCLUDE_DIRS})
 		target_link_libraries(chiaki-lib PkgConfig::LIBCRYPTO PkgConfig::OPENSSL PkgConfig::LIBSSL)
 	else ()
-		find_package(openssl REQUIRED CONFIG)
+                find_package(OpenSSL REQUIRED CONFIG)
 		target_link_libraries(chiaki-lib OpenSSL::Crypto)
 	endif ()
 

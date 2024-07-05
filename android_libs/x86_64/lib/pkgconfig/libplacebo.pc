@@ -17,7 +17,7 @@ pl_has_xxhash=0
 Name: libplacebo
 Description: Reusable library for GPU-accelerated video/image rendering
 Version: 7.342.0
-Requires: shaderc >= 2019.1, lcms2 >= 2.9
-Libs: -L${libdir} -lplacebo -lm -pthread -ldl -lvulkan
+Requires: vulkan shaderc >= 2019.1, lcms2 >= 2.9
+Libs: -L${libdir} -lplacebo -lm -pthread -ldl 
 Cflags: -I${includedir} 
 Cflags.private: -DPL_STATIC

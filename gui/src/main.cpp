@@ -10,7 +10,7 @@ int main(int argc, char *argv[]) { return real_main(argc, argv); }
 #include <discoverymanager.h>
 #include <qmlmainwindow.h>
 #include <QGuiApplication>
-
+#include <qmlopenglmainwindow.h>
 #ifdef CHIAKI_ENABLE_CLI
 #include <chiaki-cli.h>
 #endif
@@ -281,8 +281,10 @@ int real_main(int argc, char *argv[])
 
 int RunMain(QGuiApplication &app, Settings *settings)
 {
-	QmlMainWindow main_window(settings);
-	main_window.show();
+	/*QmlMainWindow main_window(settings);
+	main_window.show();*/
+    QmlOpenGLMainWindow mainWindow(settings);
+    mainWindow.show();
 	return app.exec();
 }
 
