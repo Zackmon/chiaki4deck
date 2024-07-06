@@ -83,6 +83,30 @@ QmlOpenGLMainWindow::QmlOpenGLMainWindow(const StreamSessionConnectInfo &connect
 }
 
 QmlOpenGLMainWindow::~QmlOpenGLMainWindow() {
+    quick_render->invalidate();
+    delete quick_item;
+    delete quick_window;
+    delete quick_render;
+    delete qml_engine;
+
+    pl_unmap_avframe(placebo_opengl->gpu,&current_frame);
+    pl_unmap_avframe(placebo_opengl->gpu, &previous_frame);
+
+    pl_tex_destroy(placebo_opengl->gpu, &quick_tex);
+
+
+    for (auto tex : placebo_tex)
+        pl_tex_destroy(placebo_opengl->gpu, &tex);
+
+    FILE *file = fopen(qPrintable(shader_cache_path()), "wb");
+    if (file) {
+        pl_cache_save_file(placebo_cache, file);
+        fclose(file);
+    }
+    pl_cache_destroy(&placebo_cache);
+    pl_renderer_destroy(&placebo_renderer);
+    pl_opengl_destroy(&placebo_opengl);
+    pl_log_destroy(&placebo_log);
 
 }
 
@@ -192,7 +216,9 @@ void QmlOpenGLMainWindow::show() {
     if (qEnvironmentVariable("XDG_CURRENT_DESKTOP") == "gamescope")
         showFullScreen();
     else
-        showFullScreen();
+        showNormal();
+
+
 
 }
 
@@ -222,6 +248,10 @@ void QmlOpenGLMainWindow::presentFrame(AVFrame *frame, int32_t frames_lost)
 void QmlOpenGLMainWindow::init(Settings *settings) {
     qWarning("Called Init");
     setSurfaceType(QWindow::OpenGLSurface);
+    QSurfaceFormat surfaceFormat = requestedFormat();
+    surfaceFormat.setRenderableType(QSurfaceFormat::RenderableType::OpenGL);
+    surfaceFormat.setSwapBehavior(QSurfaceFormat::SwapBehavior::SingleBuffer);
+    setFormat(surfaceFormat);
     create();
 
 
@@ -236,6 +266,10 @@ void QmlOpenGLMainWindow::init(Settings *settings) {
     if (!qt_opengl_context){
         qWarning("There is no currentContext for OpenGL , trying to make one ");
         qt_opengl_context = new QOpenGLContext();
+        QSurfaceFormat test = requestedFormat();
+        auto rendeType = test.renderableType();
+        auto context_profile = test.profile();
+
         qt_opengl_context->setFormat(requestedFormat());
         if (!qt_opengl_context->create()){
             qFatal("Failed to create QOpenGLContext");
@@ -293,7 +327,11 @@ void QmlOpenGLMainWindow::init(Settings *settings) {
     QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
 
     quick_window = new QQuickWindow(quick_render);
-    quick_window->setGraphicsDevice(QQuickGraphicsDevice::fromOpenGLContext(qt_opengl_context));
+    qt_opengl_context->makeCurrent(quick_window);
+    quick_window->setSurfaceType(QSurface::OpenGLSurface);
+    quick_window->setFormat(requestedFormat());
+
+   quick_window->setGraphicsDevice(QQuickGraphicsDevice::fromOpenGLContext(qt_opengl_context));
 
     quick_window->setColor(QColor(0, 0, 0, 0));
     connect(quick_window, &QmlOpenGLMainWindow::focusObjectChanged, this, &QmlOpenGLMainWindow::focusObjectChanged);
@@ -337,7 +375,10 @@ void QmlOpenGLMainWindow::init(Settings *settings) {
     connect(update_timer, &QTimer::timeout, this, &QmlOpenGLMainWindow::update);
 
     //QMetaObject::invokeMethod(quick_render, &QQuickRenderControl::initialize);
-    quick_render->initialize();
+    if(!quick_render->initialize()){
+        qFatal("Quick Render Failed to initialize");
+    }
+
 
     QTimer *dropped_frames_timer = new QTimer(this);
     dropped_frames_timer->setInterval(1000);
@@ -395,6 +436,8 @@ void QmlOpenGLMainWindow::scheduleUpdate() {
 void QmlOpenGLMainWindow::createSwapchain() {
     if (placebo_swapchain)
         return;
+
+    QSurface *test = qt_opengl_context->surface();
     struct pl_opengl_swapchain_params swapchain_params = {
             .swap_buffers = (void (*)(void *)) swapBuffers,
             .max_swapchain_depth = 1,
@@ -402,6 +445,7 @@ void QmlOpenGLMainWindow::createSwapchain() {
 
     };
     placebo_swapchain = pl_opengl_create_swapchain(placebo_opengl,&swapchain_params);
+
 
 }
 
@@ -431,7 +475,8 @@ void QmlOpenGLMainWindow::resizeSwapchain() {
         qCCritical(chiakiGui) << "Failed to create placebo texture";
     unsigned int out_target;
     int out_iformat;
-    unsigned int textureId =  pl_opengl_unwrap(placebo_opengl->gpu,quick_tex,&out_target, &out_iformat, nullptr);
+    uint renderbufferId;
+    unsigned int textureId =  pl_opengl_unwrap(placebo_opengl->gpu,quick_tex,&out_target, &out_iformat, &renderbufferId);
     quick_window->setRenderTarget(QQuickRenderTarget::fromOpenGLTexture(textureId,out_iformat,swapchain_size));
 }
 
@@ -476,6 +521,7 @@ void QmlOpenGLMainWindow::render() {
 
     if (!placebo_swapchain)
         return;
+
 
     AVFrame *frame = nullptr;
     pl_tex *tex = &placebo_tex[0];
@@ -598,6 +644,7 @@ void QmlOpenGLMainWindow::render() {
         qCWarning(chiakiGui) << "Failed to submit Placebo frame!";
 
     pl_swapchain_swap_buffers(placebo_swapchain);
+
 }
 
 bool QmlOpenGLMainWindow::handleShortcut(QKeyEvent *event) {
@@ -732,6 +779,8 @@ pl_voidfunc_t QmlOpenGLMainWindow::get_proc_addr(const char *procname) {
 void QmlOpenGLMainWindow::swapBuffers(QSurface *surface) {
     qt_opengl_context->swapBuffers(surface);
 }
+
+
 
 
 

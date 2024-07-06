@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) { return real_main(argc, argv); }
 #include <host.h>
 #include <controllermanager.h>
 #include <discoverymanager.h>
-#include <qmlmainwindow.h>
+//#include <qmlmainwindow.h>
 #include <QGuiApplication>
 #include <qmlopenglmainwindow.h>
 #ifdef CHIAKI_ENABLE_CLI
@@ -290,7 +290,8 @@ int RunMain(QGuiApplication &app, Settings *settings)
 
 int RunStream(QGuiApplication &app, const StreamSessionConnectInfo &connect_info)
 {
-	QmlMainWindow main_window(connect_info);
+	//QmlMainWindow main_window(connect_info);
+    QmlOpenGLMainWindow main_window(connect_info);
 	main_window.show();
 	return app.exec();
 }
