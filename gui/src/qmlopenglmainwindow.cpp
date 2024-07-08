@@ -282,10 +282,11 @@ void QmlOpenGLMainWindow::init(Settings *settings) {
     QOpenGLFunctions *qOpenGlFunctions = new QOpenGLFunctions(qt_opengl_context);
     qOpenGlFunctions->initializeOpenGLFunctions();
 
-
-
     struct pl_opengl_params opengl_params = {
-            .get_proc_addr = get_proc_addr,
+            .get_proc_addr_ex = reinterpret_cast<pl_voidfunc_t (*)(void *, const char *)>(get_proc_addr_context),
+            .proc_ctx = this,
+            /*.get_proc_addr = get_proc_addr,*/
+            .debug = true,
             .allow_software = true,
             //.make_current = make_current,
             //.release_current = make_release,
@@ -327,7 +328,7 @@ void QmlOpenGLMainWindow::init(Settings *settings) {
     QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
 
     quick_window = new QQuickWindow(quick_render);
-    qt_opengl_context->makeCurrent(quick_window);
+    //qt_opengl_context->makeCurrent(quick_window);
     quick_window->setSurfaceType(QSurface::OpenGLSurface);
     quick_window->setFormat(requestedFormat());
 
@@ -405,6 +406,8 @@ void QmlOpenGLMainWindow::init(Settings *settings) {
     setVideoPreset(VideoPreset::Default);
     setZoomFactor(settings->GetZoomFactor());
 
+    qt_opengl_context->makeCurrent(quick_window);
+
 }
 
 void QmlOpenGLMainWindow::update() {
@@ -438,13 +441,33 @@ void QmlOpenGLMainWindow::createSwapchain() {
         return;
 
     QSurface *test = qt_opengl_context->surface();
+
+    /*qOpenGlBuffer = QOpenGLBuffer();
+    qOpenGlBuffer.create();
+    if(!qOpenGlBuffer.isCreated()){
+        qFatal("Failed to create OpenGL buffer");
+    }
+    qOpenGlBuffer.allocate(16384);
+    qOpenGlBuffer.bind();*/
+
+
+    qt_opengl_context->makeCurrent(this);
+    struct pl_opengl_framebuffer opengl_buffer = {
+            .id = static_cast<int>(qt_opengl_context->defaultFramebufferObject()),
+            .flipped = true
+    };
+
+
+
     struct pl_opengl_swapchain_params swapchain_params = {
-            .swap_buffers = (void (*)(void *)) swapBuffers,
+            .swap_buffers = (void (*)(void *)) swapBuffers_context,
+            .framebuffer = opengl_buffer,
             .max_swapchain_depth = 1,
-            .priv = qt_opengl_context->surface()
+            .priv = this
 
     };
     placebo_swapchain = pl_opengl_create_swapchain(placebo_opengl,&swapchain_params);
+
 
 
 }
@@ -644,6 +667,7 @@ void QmlOpenGLMainWindow::render() {
         qCWarning(chiakiGui) << "Failed to submit Placebo frame!";
 
     pl_swapchain_swap_buffers(placebo_swapchain);
+    //qOpenGlBuffer.swap(qOpenGlBuffer2);
 
 }
 
@@ -773,11 +797,24 @@ QObject *QmlOpenGLMainWindow::focusObject() const {
     return quick_window->focusObject();
 }
 
-pl_voidfunc_t QmlOpenGLMainWindow::get_proc_addr(const char *procname) {
+/*pl_voidfunc_t QmlOpenGLMainWindow::get_proc_addr(const char *procname) {
     return qt_opengl_context->getProcAddress(procname);
 }
 void QmlOpenGLMainWindow::swapBuffers(QSurface *surface) {
     qt_opengl_context->swapBuffers(surface);
+}*/
+
+pl_voidfunc_t QmlOpenGLMainWindow::get_proc_addr_context(QmlOpenGLMainWindow* qmlOpenGlMainWindow, const char *procname) {
+    return qmlOpenGlMainWindow->qt_opengl_context->getProcAddress(procname);
+}
+
+void QmlOpenGLMainWindow::swapBuffers_context(QmlOpenGLMainWindow* qmlOpenGlMainWindow) {
+    qmlOpenGlMainWindow->swapBuffer_local();
+}
+
+void QmlOpenGLMainWindow::swapBuffer_local() {
+    QSurface* qSurface = qt_opengl_context->surface();
+    qt_opengl_context->swapBuffers(qSurface);
 }
 
 

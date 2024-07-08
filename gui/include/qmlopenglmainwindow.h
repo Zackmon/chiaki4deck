@@ -8,6 +8,7 @@
 #include <QQuickWindow>
 #include <QLoggingCategory>
 #include <QOpenGLFunctions>
+#include <QOpenGLBuffer>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -26,7 +27,7 @@ class Settings;
 class StreamSession;
 class QmlBackend;
 
-static QOpenGLContext *qt_opengl_context = {};
+//static QOpenGLContext *qt_opengl_context = {};
 class QmlOpenGLMainWindow : public QWindow
 {
     Q_OBJECT
@@ -79,8 +80,12 @@ public:
     void show();
     void presentFrame(AVFrame *frame, int32_t frames_lost);
 
-    static pl_voidfunc_t get_proc_addr (const char *procname);
-    static void swapBuffers(QSurface *surface);
+    /*static pl_voidfunc_t get_proc_addr (const char *procname);
+    static void swapBuffers(QSurface *surface);*/
+
+    static pl_voidfunc_t get_proc_addr_context (QmlOpenGLMainWindow* qmlOpenGlMainWindow,const char *procname);
+    static void swapBuffers_context(QmlOpenGLMainWindow* qmlOpenGlMainWindow);
+    void swapBuffer_local();
     //AVBufferRef *vulkanHwDeviceCtx();
 
 
@@ -153,8 +158,11 @@ private:
     bool quick_frame = false;
     bool quick_need_sync = false;
     std::atomic<bool> quick_need_render = {false};
+    //QOpenGLBuffer qOpenGlBuffer = {};
+    QOpenGLContext *qt_opengl_context = {};
 
     friend class QmlBackend;
+
 
 };
 
