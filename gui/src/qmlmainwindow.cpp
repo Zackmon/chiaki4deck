@@ -533,7 +533,7 @@ void QmlMainWindow::init(Settings *settings)
         qFatal("eglCreateContext Failed");
     }*/
 
-    qt_opengl_context = QOpenGLContext::currentContext();
+    /*qt_opengl_context = QOpenGLContext::currentContext();
     if (!qt_opengl_context){
         qWarning("There is no currentContext for OpenGL , trying to make one ");
         qt_opengl_context = new QOpenGLContext();
@@ -543,14 +543,14 @@ void QmlMainWindow::init(Settings *settings)
         if (!qt_opengl_context->makeCurrent(this)){
             qFatal("Failed to makeCurrent");
         }
-    }
+    }*/
 
-    QOpenGLFunctions *qOpenGlFunctions = new QOpenGLFunctions(qt_opengl_context);
-    qOpenGlFunctions->initializeOpenGLFunctions();
+   /* QOpenGLFunctions *qOpenGlFunctions = new QOpenGLFunctions(qt_opengl_context);
+    qOpenGlFunctions->initializeOpenGLFunctions();*/
 
 
     struct pl_opengl_params opengl_params = {
-            .get_proc_addr = get_proc_addr,
+           /* .get_proc_addr = get_proc_addr,*/
             .allow_software = true,
             //.make_current = make_current,
             //.release_current = make_release,
@@ -753,9 +753,9 @@ void QmlMainWindow::createSwapchain()
     placebo_swapchain = pl_vulkan_create_swapchain(placebo_vulkan, &swapchain_params);
 #else
      struct pl_opengl_swapchain_params swapchain_params = {
-             .swap_buffers = (void (*)(void *)) swapBuffers,
+            /* .swap_buffers = (void (*)(void *)) swapBuffers,*/
             .max_swapchain_depth = 1,
-            .priv = qt_opengl_context->surface()
+            /*.priv = qt_opengl_context->surface()*/
 
     };
     placebo_swapchain = pl_opengl_create_swapchain(placebo_opengl,&swapchain_params);
