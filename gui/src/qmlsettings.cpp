@@ -476,12 +476,14 @@ QStringList QmlSettings::availableDecoders() const
 {
     static QSet<QString> allowed = {
         "vulkan",
-#if defined(Q_OS_LINUX)
+#if defined(Q_OS_LINUX) && !defined(__ANDROID__)
         "vaapi",
 #elif defined(Q_OS_MACOS)
         "videotoolbox",
 #elif defined(Q_OS_WIN)
         "d3d11va",
+#elif defined(__ANDROID__)
+        "mediacodec",
 #endif
     };
     QStringList out = {"none"};

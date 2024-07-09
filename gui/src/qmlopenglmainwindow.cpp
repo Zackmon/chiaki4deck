@@ -79,7 +79,21 @@ QmlOpenGLMainWindow::QmlOpenGLMainWindow(Settings *settings) : QWindow() {
 
 
 QmlOpenGLMainWindow::QmlOpenGLMainWindow(const StreamSessionConnectInfo &connect_info) : QWindow() {
-    qFatal("not imlemented yet");
+    //qFatal("not imlemented yet");
+    init(connect_info.settings);
+    backend->createSession(connect_info);
+    if (connect_info.zoom)
+        setVideoMode(VideoMode::Zoom);
+    else if (connect_info.stretch)
+        setVideoMode(VideoMode::Stretch);
+
+    if (connect_info.fullscreen || connect_info.zoom || connect_info.stretch)
+        showFullScreen();
+
+    connect(session, &StreamSession::ConnectedChanged, this, [this]() {
+        if (session->IsConnected())
+            connect(session, &StreamSession::SessionQuit, qGuiApp, &QGuiApplication::quit);
+    });
 }
 
 QmlOpenGLMainWindow::~QmlOpenGLMainWindow() {
@@ -89,6 +103,7 @@ QmlOpenGLMainWindow::~QmlOpenGLMainWindow() {
     delete quick_render;
     delete qml_engine;
 
+    av_buffer_unref(&hw_dev_ctx);
     pl_unmap_avframe(placebo_opengl->gpu,&current_frame);
     pl_unmap_avframe(placebo_opengl->gpu, &previous_frame);
 
@@ -815,6 +830,22 @@ void QmlOpenGLMainWindow::swapBuffers_context(QmlOpenGLMainWindow* qmlOpenGlMain
 void QmlOpenGLMainWindow::swapBuffer_local() {
     QSurface* qSurface = qt_opengl_context->surface();
     qt_opengl_context->swapBuffers(qSurface);
+}
+
+AVBufferRef *QmlOpenGLMainWindow::hwDeviceCtx() {
+    if(hw_dev_ctx){
+        return hw_dev_ctx;
+    }
+
+    hw_dev_ctx = av_hwdevice_ctx_alloc(AV_HWDEVICE_TYPE_MEDIACODEC);
+    //AVHWDeviceContext *hwctx = reinterpret_cast<AVHWDeviceContext*>(hw_dev_ctx->data);
+    //AVMediaCodecDeviceContext *ctx = reinterpret_cast<AVMediaCodecDeviceContext*>(hwctx->hwctx);
+
+    if (av_hwdevice_ctx_init(hw_dev_ctx)<0){
+        qCWarning(chiakiGui) << "Failed to create Vulkan decode context";
+        av_buffer_unref(&hw_dev_ctx);
+    }
+    return hw_dev_ctx;
 }
 
 

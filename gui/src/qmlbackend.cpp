@@ -599,7 +599,7 @@ void QmlBackend::createSession(const StreamSessionConnectInfo &connect_info)
     }
 
     if (session_info.hw_decoder == "vulkan") {
-        session_info.hw_device_ctx = nullptr;//window->vulkanHwDeviceCtx();
+        session_info.hw_device_ctx = window->hwDeviceCtx();//nullptr;//window->vulkanHwDeviceCtx();
         if (!session_info.hw_device_ctx)
         {
             session_info.hw_decoder.clear();

@@ -86,7 +86,7 @@ public:
     static pl_voidfunc_t get_proc_addr_context (QmlOpenGLMainWindow* qmlOpenGlMainWindow,const char *procname);
     static void swapBuffers_context(QmlOpenGLMainWindow* qmlOpenGlMainWindow);
     void swapBuffer_local();
-    //AVBufferRef *vulkanHwDeviceCtx();
+    AVBufferRef *hwDeviceCtx();
 
 
 signals:
@@ -160,6 +160,7 @@ private:
     std::atomic<bool> quick_need_render = {false};
     //QOpenGLBuffer qOpenGlBuffer = {};
     QOpenGLContext *qt_opengl_context = {};
+    AVBufferRef *hw_dev_ctx = nullptr;
 
     friend class QmlBackend;
 
