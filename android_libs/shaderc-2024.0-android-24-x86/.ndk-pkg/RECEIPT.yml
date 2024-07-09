@@ -1,0 +1,37 @@
+pkgname: shaderc
+pkgtype: exe
+version: 2024.0
+summary: A collection of tools, libraries, and tests for Vulkan shader compilation
+web-url: https://github.com/google/shaderc
+git-url: https://github.com/google/shaderc
+src-url: https://github.com/google/shaderc/archive/refs/tags/v2024.0.tar.gz
+src-sha: c761044e4e204be8e0b9a2d7494f08671ca35b92c4c791c7049594ca7514197f
+license: Apache-2.0
+dep-upp: python3 git curl bsdtar cmake ninja
+prepare: python3 utils/git-sync-deps
+bsystem: cmake
+binbstd: 0
+install: |
+    cmakew \
+        -DSHADERC_SKIP_TESTS=ON \
+        -DSHADERC_SKIP_INSTALL=OFF \
+        -DSHADERC_SKIP_EXAMPLES=OFF \
+        -DSHADERC_ENABLE_WGSL_OUTPUT=OFF \
+        -DSHADERC_ENABLE_WERROR_COMPILE=ON \
+        -DBUILD_SHARED_LIBS=OFF
+parallel: 1
+ndkvers: 26.3.11579264
+builtby: ndk-pkg-0.12.3
+builtat: 1720093520
+buildon:
+    os-arch: x86_64
+    os-kind: linux
+    os-type: linux
+    os-code: ubuntu
+    os-name: Ubuntu
+    os-vers: 24.04
+    os-ncpu: 64
+    os-euid: 1000
+    os-egid: 1000
+builtfor: android-24-x86
+profile: release
