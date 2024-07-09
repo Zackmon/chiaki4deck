@@ -213,10 +213,10 @@ void QmlOpenGLMainWindow::show() {
 
     resize(1280, 720);
 
-    if (qEnvironmentVariable("XDG_CURRENT_DESKTOP") == "gamescope")
+    //if (qEnvironmentVariable("XDG_CURRENT_DESKTOP") == "gamescope")
         showFullScreen();
-    else
-        showNormal();
+    //else
+     //   showNormal();
 
 
 
@@ -249,7 +249,7 @@ void QmlOpenGLMainWindow::init(Settings *settings) {
     qWarning("Called Init");
     setSurfaceType(QWindow::OpenGLSurface);
     QSurfaceFormat surfaceFormat = requestedFormat();
-    surfaceFormat.setRenderableType(QSurfaceFormat::RenderableType::OpenGL);
+    surfaceFormat.setRenderableType(QSurfaceFormat::RenderableType::OpenGLES);
     surfaceFormat.setSwapBehavior(QSurfaceFormat::SwapBehavior::SingleBuffer);
     setFormat(surfaceFormat);
     create();
