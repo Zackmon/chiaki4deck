@@ -90,12 +90,24 @@ DialogView {
             onCurrentIndexChanged: nextItemInFocusChain().forceActiveFocus(Qt.TabFocusReason)
 
             Item {
+                ScrollView{
+                    id:scrollbar
+                    anchors{
+                        top:parent.top
+                        left:parent.left
+
+                        leftMargin: 5
+                        topMargin: 1
+                    }
+                    width: parent.width
+                    height: parent.height * 0.9
+                    clip : true
                 // General
                 GridLayout {
                     anchors {
                         top: parent.top
                         horizontalCenter: parent.horizontalCenter
-                        topMargin: 20
+                        topMargin: 10
                     }
                     columns: 2
                     rowSpacing: 10
@@ -219,7 +231,7 @@ DialogView {
                         }
                     }
                 }
-
+}
                 C.Button {
                     id: aboutButton
                     anchors {
