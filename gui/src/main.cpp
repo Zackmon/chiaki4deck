@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) { return real_main(argc, argv); }
 #include <host.h>
 #include <controllermanager.h>
 #include <discoverymanager.h>
-//#include <qmlmainwindow.h>
+
 #include <QGuiApplication>
 #include <qmlopenglmainwindow.h>
 #ifndef __ANDROID__
