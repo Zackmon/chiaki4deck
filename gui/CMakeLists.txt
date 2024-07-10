@@ -49,8 +49,8 @@ set(SOURCE_FILES
 	src/qmlsvgprovider.cpp
 	include/systemdinhibit.h
 	src/systemdinhibit.cpp
-        include/qmlopenglmainwindow.h
-        src/qmlopenglmainwindow.cpp
+	include/qmlopenglmainwindow.h
+    src/qmlopenglmainwindow.cpp
 	)
 set(RESOURCE_FILES "")
 
@@ -91,8 +91,10 @@ if (ANDROID)
 
 
 else ()
-	#qt_add_executable(chiaki  ${RESOURCE_FILES} ${SOURCE_FILES}
-	#)
+	list(APPEND SOURCE_FILES
+			include/qmlvulkanmainwindow.h
+			src/qmlvulkanmainwindow.cpp
+	)
 	add_executable(chiaki WIN32
 			${RESOURCE_FILES}
 			${SOURCE_FILES}

@@ -6,51 +6,76 @@
 #include <QWindow>
 #include <QQuickWindow>
 #include <QLoggingCategory>
-
+#include <QStandardPaths>
+#include <QQuickRenderControl>
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavutil/hwcontext_vulkan.h>
-#include "libavutil/hwcontext_mediacodec.h"
 #include <libplacebo/options.h>
-#ifndef __NOVULKAN__
-#include <libplacebo/vulkan.h>
-#endif
+
 #include <libplacebo/renderer.h>
 #include <libplacebo/log.h>
 #include <libplacebo/cache.h>
-#include <libplacebo/opengl.h>
+#include <libplacebo/gpu.h>
 }
 
-#ifndef __NOVULKAN__
-#include <vulkan/vulkan.h>
-
-#if defined(Q_OS_LINUX) && ! __ANDROID__
-#include <xcb/xcb.h>
-#include <vulkan/vulkan_xcb.h>
-#include <vulkan/vulkan_wayland.h>
-#elif defined(Q_OS_MACOS)
-#include <vulkan/vulkan_metal.h>
-#elif defined(Q_OS_WIN)
-#include <vulkan/vulkan_win32.h>
-#elif __ANDROID__
-#include <vulkan/vulkan_android.h>
-#endif
-#endif //__NOVULKAN__
-
-#include <GLES/egl.h>
-#include <GLES2/gl2.h>
-#ifdef __ANDROID__
-#include <android/native_window.h>
-#endif
-#include <QOpenGLFunctions>
 
 Q_DECLARE_LOGGING_CATEGORY(chiakiGui);
+
+
+
+static void placebo_log_cb(void *user, pl_log_level level, const char *msg)
+{
+    ChiakiLogLevel chiaki_level;
+    switch (level) {
+        case PL_LOG_NONE:
+        case PL_LOG_TRACE:
+        case PL_LOG_DEBUG:
+            qCDebug(chiakiGui).noquote() << "[libplacebo]" << msg;
+            break;
+        case PL_LOG_INFO:
+            qCInfo(chiakiGui).noquote() << "[libplacebo]" << msg;
+            break;
+        case PL_LOG_WARN:
+            qCWarning(chiakiGui).noquote() << "[libplacebo]" << msg;
+            break;
+        case PL_LOG_ERR:
+        case PL_LOG_FATAL:
+            qCCritical(chiakiGui).noquote() << "[libplacebo]" << msg;
+            break;
+    }
+}
+
+static QString shader_cache_path()
+{
+    static QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/pl_shader.cache";
+    return path;
+}
+
+
+
+class RenderControl : public QQuickRenderControl
+{
+public:
+    explicit RenderControl(QWindow *window)
+            : window(window)
+    {
+    }
+
+    QWindow *renderWindow(QPoint *offset) override
+    {
+        Q_UNUSED(offset);
+        return window;
+    }
+
+private:
+    QWindow *window = {};
+};
 
 class Settings;
 class StreamSession;
 class QmlBackend;
 
-//static QOpenGLContext *qt_opengl_context = {};
 class QmlMainWindow : public QWindow
 {
     Q_OBJECT
@@ -102,10 +127,7 @@ public:
     void show();
     void presentFrame(AVFrame *frame, int32_t frames_lost);
 
-    AVBufferRef *vulkanHwDeviceCtx();
-
-    static pl_voidfunc_t get_proc_addr (const char *procname);
-    static void swapBuffers(QSurface *surface);
+   virtual AVBufferRef *hwDeviceCtx() = 0;
 
 signals:
     void hasVideoChanged();
@@ -116,21 +138,22 @@ signals:
     void videoPresetChanged();
     void menuRequested();
 
-private:
-    void init(Settings *settings);
+protected:
+    //virtual void init(Settings *settings);
     void update();
     void scheduleUpdate();
-    void createSwapchain();
-    void destroySwapchain();
-    void resizeSwapchain();
+    virtual void createSwapchain() = 0;
+    virtual void destroySwapchain() = 0;
+    virtual void resizeSwapchain() = 0;
     void updateSwapchain();
     void sync();
-    void beginFrame();
-    void endFrame();
+    virtual void beginFrame() = 0;
+    virtual void endFrame() = 0;
     void render();
     bool handleShortcut(QKeyEvent *event);
     bool event(QEvent *event) override;
     QObject *focusObject() const override;
+    virtual pl_gpu get_pl_gpu() = 0;
 
     bool has_video = false;
     bool keep_video = false;
@@ -143,22 +166,14 @@ private:
 
     QmlBackend *backend = {};
     StreamSession *session = {};
-    AVBufferRef *vulkan_hw_dev_ctx = nullptr;
 
     pl_cache placebo_cache = {};
     pl_log placebo_log = {};
-#ifndef __NOVULKAN__
-    pl_vk_inst placebo_vk_inst = {};
-    pl_vulkan placebo_vulkan = {};
-#endif
-    pl_opengl placebo_opengl = {};
-    EGLConfig config_;
 
     pl_swapchain placebo_swapchain = {};
     pl_renderer placebo_renderer = {};
     std::array<pl_tex, 8> placebo_tex{};
-    VkSurfaceKHR surface = VK_NULL_HANDLE;
-    int vk_decode_queue_index = -1;
+
     QSize swapchain_size;
     QMutex frame_mutex;
     QThread *render_thread = {};
@@ -167,40 +182,21 @@ private:
     pl_frame previous_frame = {};
     std::atomic<bool> render_scheduled = {false};
 
-    QVulkanInstance *qt_vk_inst = {};
 
     QQmlEngine *qml_engine = {};
     QQuickWindow *quick_window = {};
     QQuickRenderControl *quick_render = {};
     QQuickItem *quick_item = {};
     pl_tex quick_tex = {};
-    VkSemaphore quick_sem = VK_NULL_HANDLE;
-    uint64_t quick_sem_value = 0;
+
     QTimer *update_timer = {};
     bool quick_frame = false;
     bool quick_need_sync = false;
     std::atomic<bool> quick_need_render = {false};
 
-#ifndef __NOVULKAN__
-    struct {
-        PFN_vkGetDeviceProcAddr vkGetDeviceProcAddr;
-#if defined(Q_OS_LINUX) && ! __ANDROID__
-        PFN_vkCreateXcbSurfaceKHR vkCreateXcbSurfaceKHR;
-        PFN_vkCreateWaylandSurfaceKHR vkCreateWaylandSurfaceKHR;
-#elif defined(Q_OS_MACOS)
-        PFN_vkCreateMetalSurfaceEXT vkCreateMetalSurfaceEXT;
-#elif defined(Q_OS_WIN32)
-        PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
-#elif __ANDROID__
-        PFN_vkCreateAndroidSurfaceKHR  vkCreateAndroidSurfaceKHR;
-#endif
-        PFN_vkDestroySurfaceKHR vkDestroySurfaceKHR;
-        PFN_vkWaitSemaphores vkWaitSemaphores;
-        PFN_vkGetPhysicalDeviceQueueFamilyProperties vkGetPhysicalDeviceQueueFamilyProperties;
-    } vk_funcs;
-#endif
+    bool isVulkan = false;
+
     friend class QmlBackend;
+
+
 };
-
-
-

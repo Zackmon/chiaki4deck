@@ -2,8 +2,8 @@
 
 #include "streamsession.h"
 #include "discoverymanager.h"
-//#include "qmlmainwindow.h"
-#include "qmlopenglmainwindow.h"
+#include "qmlmainwindow.h"
+
 #include "qmlcontroller.h"
 #include "qmlsettings.h"
 
@@ -49,8 +49,7 @@ signals:
 class QmlBackend : public QObject
 {
     Q_OBJECT
-//    Q_PROPERTY(QmlMainWindow* window READ qmlWindow CONSTANT)
-    Q_PROPERTY(QmlOpenGLMainWindow* window READ qmlWindow CONSTANT)
+    Q_PROPERTY(QmlMainWindow* window READ qmlWindow CONSTANT)
     Q_PROPERTY(QmlSettings* settings READ qmlSettings CONSTANT)
     Q_PROPERTY(StreamSession* session READ qmlSession NOTIFY sessionChanged)
     Q_PROPERTY(QList<QmlController*> controllers READ qmlControllers NOTIFY controllersChanged)
@@ -75,11 +74,11 @@ public:
     };
     Q_ENUM(PsnConnectState);
     //QmlBackend(Settings *settings, QmlMainWindow *window);
-    QmlBackend(Settings *settings, QmlOpenGLMainWindow *window);
+    QmlBackend(Settings *settings, QmlMainWindow *window);
     ~QmlBackend();
 
 //    QmlMainWindow *qmlWindow() const;
-    QmlOpenGLMainWindow *qmlWindow() const;
+    QmlMainWindow *qmlWindow() const;
     QmlSettings *qmlSettings() const;
     StreamSession *qmlSession() const;
     QList<QmlController*> qmlControllers() const;
@@ -175,7 +174,7 @@ private:
 
     Settings *settings = {};
     QmlSettings *settings_qml = {};
-    QmlOpenGLMainWindow *window = {};
+    QmlMainWindow *window = {};
     //QmlOpenGLMainWindow *window_opengl = {};
     StreamSession *session = {};
     QThread *frame_thread = {};

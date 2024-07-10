@@ -226,7 +226,7 @@ void QmlRegist::regist_cb(ChiakiRegistEvent *event, void *user)
     refreshPsnToken();
 }*/
 
-QmlBackend::QmlBackend(Settings *settings, QmlOpenGLMainWindow *window)
+QmlBackend::QmlBackend(Settings *settings, QmlMainWindow *window)
         : QObject(window)
         , settings(settings)
         , settings_qml(new QmlSettings(settings, this))
@@ -236,7 +236,7 @@ QmlBackend::QmlBackend(Settings *settings, QmlOpenGLMainWindow *window)
 
     const char *uri = "org.streetpea.chiaki4deck";
     qmlRegisterSingletonInstance(uri, 1, 0, "Chiaki", this);
-    qmlRegisterUncreatableType<QmlOpenGLMainWindow>(uri, 1, 0, "ChiakiWindow", {});
+    qmlRegisterUncreatableType<QmlMainWindow>(uri, 1, 0, "ChiakiWindow", {});
     qmlRegisterUncreatableType<QmlSettings>(uri, 1, 0, "ChiakiSettings", {});
     qmlRegisterUncreatableType<StreamSession>(uri, 1, 0, "ChiakiSession", {});
 
@@ -379,7 +379,7 @@ QmlBackend::~QmlBackend()
     psn_connection_thread.wait();
 }
 
-QmlOpenGLMainWindow *QmlBackend::qmlWindow() const
+QmlMainWindow *QmlBackend::qmlWindow() const
 {
     return window;
 }
@@ -659,7 +659,7 @@ void QmlBackend::createSession(const StreamSessionConnectInfo &connect_info)
             frame = sw_frame;
         }
 //        QMetaObject::invokeMethod(window, std::bind(&QmlMainWindow::presentFrame, window, frame, frames_lost));
-        QMetaObject::invokeMethod(window, std::bind(&QmlOpenGLMainWindow::presentFrame, window, frame, frames_lost));
+        QMetaObject::invokeMethod(window, std::bind(&QmlMainWindow::presentFrame, window, frame, frames_lost));
     });
 
     connect(session, &StreamSession::SessionQuit, this, [this](ChiakiQuitReason reason, const QString &reason_str) {
