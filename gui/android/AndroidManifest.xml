@@ -5,39 +5,28 @@
     <!-- %%INSERT_PERMISSIONS -->
     <!-- %%INSERT_FEATURES -->
 
-    !-- Touchscreen support -->
-    <uses-feature
-            android:name="android.hardware.touchscreen"
-            android:required="false" />
+    !-- Touchscreen support --
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
 
     <!-- Game controller support -->
-    <uses-feature
-            android:name="android.hardware.bluetooth"
-            android:required="false" />
-    <uses-feature
-            android:name="android.hardware.gamepad"
-            android:required="false" />
-    <uses-feature
-            android:name="android.hardware.usb.host"
-            android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false"/>
+    <uses-feature android:name="android.hardware.gamepad" android:required="false"/>
+    <uses-feature android:name="android.hardware.usb.host" android:required="false"/>
 
     <!-- External mouse input events -->
-    <uses-feature
-            android:name="android.hardware.type.pc"
-            android:required="false" />
+    <uses-feature android:name="android.hardware.type.pc" android:required="false"/>
 
-    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.VIBRATE"/>
 
 
     <supports-screens android:anyDensity="true" android:largeScreens="true" android:normalScreens="true"
                       android:smallScreens="true"/>
-    <application android:name="org.qtproject.qt.android.bindings.QtApplication" android:hardwareAccelerated="true"
+    <application android:name="org.chiaki4deck.chiaki4deck.ChiakiApplication" android:hardwareAccelerated="true"
                  android:label="-- %%INSERT_APP_NAME%% --" android:requestLegacyExternalStorage="true"
                  android:allowBackup="true" android:fullBackupOnly="false">
         <activity android:name="org.chiaki4deck.chiaki4deck.ChiakiActivity"
                   android:configChanges="orientation|uiMode|screenLayout|screenSize|smallestScreenSize|layoutDirection|locale|fontScale|keyboard|keyboardHidden|navigation|mcc|mnc|density"
-                  android:launchMode="singleTop" android:screenOrientation="landscape" android:exported="true"
-                  android:label="">
+                  android:launchMode="singleTop" android:screenOrientation="landscape" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -45,8 +34,8 @@
             <meta-data android:name="android.app.lib_name" android:value="-- %%INSERT_APP_LIB_NAME%% --"/>
             <meta-data android:name="android.app.arguments" android:value="-- %%INSERT_APP_ARGUMENTS%% --"/>
         </activity>
-        <activity android:name="org.libsdl.app.SDLActivity" android:exported="true" android:label="Test"
-                  android:screenOrientation="unspecified"/>
+        <activity android:name="org.libsdl.app.SDLActivity" android:exported="true" android:label=""
+                  android:screenOrientation="landscape"/>
 
         <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.qtprovider"
                   android:exported="false" android:grantUriPermissions="true">

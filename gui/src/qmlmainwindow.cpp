@@ -157,11 +157,16 @@ void QmlMainWindow::show()
     }
 
     resize(1280, 720);
+#ifdef __ANDROID__
+    showFullScreen();
 
+#else
     if (qEnvironmentVariable("XDG_CURRENT_DESKTOP") == "gamescope")
         showFullScreen();
     else
         showNormal();
+#endif
+
 }
 
 void QmlMainWindow::presentFrame(AVFrame *frame, int32_t frames_lost)
